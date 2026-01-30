@@ -1,0 +1,46 @@
+<%
+'COMPANYCODES.INC
+Dim aryCmpnyLoc(15,1)
+Dim arySrvrOS(2,1)
+
+aryCmpnyLoc(0,0)="AGL"
+aryCmpnyLoc(0,1)="Agrale"
+aryCmpnyLoc(1,0)="AMT"
+aryCmpnyLoc(1,1)="Amtran"
+aryCmpnyLoc(2,0)="BRK"
+aryCmpnyLoc(2,1)="Brookfield Data Center"
+aryCmpnyLoc(3,0)="CHA"
+aryCmpnyLoc(3,1)="Chatham Assembly Plant"
+aryCmpnyLoc(4,0)="ESC"
+aryCmpnyLoc(4,1)="Escobedo Assembly Plant"
+aryCmpnyLoc(5,0)="FTW"
+aryCmpnyLoc(5,1)="FT Wayne Engineering Center"
+aryCmpnyLoc(6,0)="GAR"
+aryCmpnyLoc(6,1)="Garland Assembly Plant"
+aryCmpnyLoc(7,0)="IND"
+aryCmpnyLoc(7,1)="Indianapolis Engine Plant"
+aryCmpnyLoc(8,0)="MEL"
+aryCmpnyLoc(8,1)="Melrose Park Engine Plant"
+aryCmpnyLoc(9,0)="NFC"
+aryCmpnyLoc(9,1)="Navistar Finacial"
+aryCmpnyLoc(10,0)="OBT"
+aryCmpnyLoc(10,1)="Oakbrook Terrace NIO"
+aryCmpnyLoc(11,0)="PEC"
+aryCmpnyLoc(11,1)="PEC"
+aryCmpnyLoc(12,0)="SAP"
+aryCmpnyLoc(12,1)="Springfield Assembly Plant"
+aryCmpnyLoc(13,0)="TDM"
+aryCmpnyLoc(13,1)="Trailers De Monterrey"
+aryCmpnyLoc(14,0)="WBK"
+aryCmpnyLoc(14,1)="Westbrook"
+aryCmpnyLoc(15,0)="WHQ"
+aryCmpnyLoc(15,1)="World headquaters"
+
+arySrvrOS(0,0)="MVS"
+arySrvrOS(0,1)="MVS"
+arySrvrOS(1,0)="WNT"
+arySrvrOS(1,1)="Windows NT"
+arySrvrOS(2,0)="UNIX"
+arySrvrOS(2,1)="UNIX"
+
+%>

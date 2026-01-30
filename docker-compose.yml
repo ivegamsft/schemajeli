@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: schemajeli-db
+    environment:
+      POSTGRES_DB: schemajeli
+      POSTGRES_USER: schemajeli_user
+      POSTGRES_PASSWORD: dev_password_change_in_prod
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schemajeli_user -d schemajeli"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: schemajeli-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://schemajeli_user:dev_password_change_in_prod@postgres:5432/schemajeli
+      JWT_SECRET: dev_secret_change_in_prod
+      JWT_EXPIRY: 3600
+      LOG_LEVEL: debug
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src/backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: schemajeli-frontend
+    environment:
+      VITE_API_URL: http://localhost:3000/api/v1
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+  # Redis (optional - for caching/rate limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: schemajeli-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PgAdmin (optional - database management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: schemajeli-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@schemajeli.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  default:
+    name: schemajeli-network

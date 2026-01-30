@@ -1,0 +1,242 @@
+<SCRIPT LANGUAGE="VBScript">
+Sub CloseWindow
+   self.Close
+End Sub
+</SCRIPT>
+
+<HTML>
+
+<HEAD>
+<TITLE>?? Using the Repository help - Navistar Repository System </TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" LINK="#003399" ALINK="#003399" VLINK="#003399" TEXT="#000000">
+<A NAME="#TOP"></A>
+<TABLE BORDER="0" ALIGN="center" WIDTH="100%" CELLPADDING="0" CELLSPACING="0">
+  <TR>
+    <TD HEIGHT="10" ALIGN="center"><H3><FONT FACE="Verdana" size="2"><B>Help</B>-Using the Repository</FONT></H3>
+    </TD>
+  </TR>
+  <TR>
+    <TD><FONT SIZE="2" FACE="Verdana">Choose an option from below, and follow the link.</FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="20"><FONT SIZE="2" FACE="Verdana">&nbsp;</FONT></TD>
+  </TR>
+</TABLE>
+
+<TABLE BORDER="0" ALIGN="CENTER" WIDTH="50%" BGCOLOR="#CCCC99" CELLPADDING="2" CELLSPACING="0">
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#What">What is a Repository</A>?</FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#Why">Why we need a Repository?</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#Naming">Overview of naming standards</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#Overview">Overview of the Navistar Repository</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#Glossary">Glossary of Terms</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT SIZE="2" FACE="Verdana"><A HREF="#Resources">Additional Resources</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close help</A> </FONT></TD>
+  </TR>
+</TABLE>
+<TABLE BORDER="0" ALIGN="CENTER" WIDTH="100%" CELLPADDING="2" CELLSPACING="0">
+  <TR>
+    <TD HEIGHT="500">&nbsp;
+  </TR>
+  <TR>
+    <TD HEIGHT="20"><A NAME="#What"><FONT SIZE="3" FACE="Verdana"><B>What is a Repository?</B></FONT></A>
+    </TD>
+  </TR>
+  <TR>
+    <TD><P><FONT FACE="Verdana" size="2">&nbsp;&nbsp;&nbsp; The term &quot;<I>Repository</I>&quot; is very general
+    and because it is used in many different areas, it makes it hard to distinguish between all of the 
+    definitions.&nbsp; When the <ACRONYM TITLE="Enterprise Data Warehouse">EDW</ACRONYM> team refers to a Repository,
+    we are referring to a new way of thinking about systems.  We refer to how the systems themselves interact, 
+    and how we as users interact with them.&nbsp;<BR>
+    To give the repository a solid and clear definition, consider some of the areas to which a
+    repository tool can add value to enterprise meta-data management:</FONT></P>
+    <FONT FACE="Verdana" size="2"><B>Business Processes</B></FONT>
+    <P><FONT FACE="Verdana" size="2">Business Processes include the development of enterprise models
+    that document, analyze, or simulate the operational environment and its control and
+    product flow. Repositories can act as a place to maintain the models, the the
+    relationships between the models </FONT></P>
+    <FONT FACE="Verdana" size="2"><b>Application Development</B></FONT>
+    <P><FONT FACE="Verdana" size="2">Application development is one of the main areas in which
+    repositories have been used. &nbsp;&nbsp; Software development is a multi-step process,
+    typically involving several developers, users, departments, etc., sometimes in different
+    geographic locations. Having common ideas about how a system is run and how it affects the
+    business is difficult. Repositories help to bridge the gap between the business and the
+    systems they use.</FONT></P>
+    <FONT FACE="Verdana" size="2"><B>Data Modeling and Design</B></FONT>
+    <P><FONT FACE="Verdana" size="2">The task of data modeling and design typically involves multiple
+    developers. A web-based repository allows querying of shared meta-data and takes on the
+    role of data dictionary for the enterprise.</FONT></P>
+    <FONT FACE="Verdana" size="2"><B>Data Warehousing</B></FONT>
+    <P><FONT FACE="Verdana" size="2">The area of Data Warehousing is still a mystery to most
+    users.&nbsp; The Repository stores the combination of technical and business meta-data
+    which helps to assist users with definitions and explanations and makes the tasks of
+    designing, managing, and using a data warehouse easier.</FONT></P>
+    <FONT FACE="Verdana" size="2"><B>Legacy Application Maintenance</B></FONT>
+    <P><FONT FACE="Verdana" size="2">The maintainer of a legacy system can use a repository tool to
+    document an existing system or to analyze the impact of modifications to that system.
+    Today's enterprises base their day-to-day operation on computers from desktop to mainframe
+    and have many deployed database systems. In many cases, the original developers of
+    databases are unknown and specifications are unavailable. Nevertheless, such legacy
+    systems sometimes need immediate, mission-critical modification. Retaining the database
+    structure with all its dependencies in a repository allows the individual developer to
+    explore the legacy system and to determine the impact of changes.</FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99" ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="#TOP">Back to Top</A>
+    </FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close help</A>
+    </FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="200"><FONT FACE="Verdana" size="2"></FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT SIZE="2" FACE="Verdana"><A NAME="#Why"></A><B>Why we need a Repository?</B></FONT>
+    <P><FONT SIZE="2" FACE="Verdana">In the past, businesses have been challenged to find and consolidate 
+    all of the information needed for efficient decision-making. Capturing business knowledge such as 
+    goals, objectives, processes and rules, as well as terminology and categorizations, and enabling the 
+    automated linkage between a wide variety of business information types, is needed for the creation of 
+    enterprise information portals or &quot;digital dashboards,&quot; which enable real-time decision-making by 
+    providing businesses with a single window into all of their information.</FONT>
+    <UL>
+    <LI><P><FONT SIZE="2" FACE="Verdana"><B>One representation</B><BR>
+        a common model that allows systems to share information described in a repository and to 
+        promote a single description for the entire enterprise</FONT></P>
+    <LI><P><FONT SIZE="2" FACE="Verdana"><B>One place</B><BR>
+        data-management and integration technology that supports querying repository information and 
+        browsing the repository by being able to follow relationships between objects in the Repository.</FONT></P>
+    </UL>
+    </TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99" ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="#TOP">Back to
+    Top</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close
+    help</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="200"><FONT FACE="Verdana" size="2"></FONT></TD>
+  </TR>
+  <TR>
+    <TD><H3><FONT SIZE="2" FACE="Verdana"><A NAME="#Naming"></A><B>Navistar meta-data Naming Standards</B></FONT></H3>
+    </TD>
+  </TR>
+  <TR>
+    <TD><FONT SIZE="2" FACE="Verdana"><P>meta-data naming standards enforcement support the effective use of 
+    data warehousing, data mining, system engineering, data architecture and data analysis. 
+    The function of the Navistar Repository is:
+    <P><UL>
+    <LI>To make information readily available, understandable, common, and functional
+    <LI>To establish and enforce naming rules and standards to promote a common language among systems
+    <LI>To enable sharing and increase reusability among teams and systems
+    </UL></FONT></P>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99" ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="#TOP">Back to Top</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close help</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="200">&nbsp;</TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="20"><FONT SIZE="2" FACE="Verdana"><A NAME="#Overview"></A><B>Overview of the Navistar Repository</B></FONT>
+    </TD>
+    </TR>
+    <TR>
+    <TD><FONT SIZE="2" FACE="Verdana"><P>The Navistar Repository was designed with ease-of-use and functionality in mind.  After you have logged
+    in, the main screen will display any messages that are pertinent to the current session.  Additional resource links are also displayed here in
+    case you want to research other areas related to the repository.  The navigation menu is displayed in the upper portion of your screen.  You can select
+    alternate menus by following the associated links on the menu.  Once you select a menu option, the menu will change and the options in the drop down list
+    will also change display the appropriate selections.  Click the drop down box in the menu and when a selection is made, the main portion if your browser 
+    will display the screen.  You can also press <I>Go</I>.  Some screens allow you to navigate from within the main portion of the window.
+    <Br>The menu options are displayed according to your user authority. All users by default receive the following menu options.  For Help on a menu option
+    follow the link:<BR>
+    <P><UL>
+    <LI><A HREF="hlp_search.htm">Search</A>
+       <UL>
+       <LI>Servers
+       <LI>Databases
+       <LI>Tables
+       <LI>Elements
+       <LI>Element Key Words
+       <LI>Standard Abbreviations
+       </UL>
+    <LI><A HREF="hlp_reports.htm">Reports</A>
+       <UL>
+       <LI>Relational Object
+       <LI>View Class Words
+       <LI>Servers
+       <LI>Generate DDL
+       </UL>
+    </UL>
+    <Br>Users with the ability to add and maintain objects receive in addition to the above:<BR>
+    <P><UL>
+    <LI><A HREF="hlp_maintain.htm">Maintain</A>
+       <UL>
+       <LI>Database
+       <LI>Tables
+       <LI>Element
+       </UL>
+    </UL>
+    <Br>Administrators receive all of the above menu options including:<BR>
+    <P><UL>
+    <LI><A HREF="hlp_admin.htm">Administration</A>
+       <UL>
+       <LI>Server
+       <LI>Standard Abbreviation
+       <LI>Users
+       </UL>
+    </UL>
+    </FONT></P>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99" ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="#TOP">Back to Top</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close help</A></FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="200">&nbsp;</TD>
+  </TR>
+  <TR>
+    <TD><FONT SIZE="2" FACE="Verdana"><A NAME="#Resources"></A><B>Additional&nbsp; Resources</B></FONT>
+    </TD>
+  </TR>
+  <TR>
+  <TD>
+    <P><FONT SIZE="2" FACE="Verdana"><ACRONYM TITLE="Department of Defense">DOD</ACRONYM> Data Standards Tutorial PowerPoint presentation</FONT></P>
+    <P><FONT FACE="Verdana" size="2">&nbsp;</FONT>
+  </TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99" ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="#TOP">Back to Top</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="center"><FONT SIZE="1" FACE="Verdana"><A HREF="close" ONCLICK="CloseWindow()">Close help</A> </FONT></TD>
+  </TR>
+  <TR>
+    <TD HEIGHT="200">&nbsp;</TD>
+  </TR>
+</TABLE>
+</BODY>
+</HTML>

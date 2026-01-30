@@ -1,0 +1,18 @@
+Microsoft Visual Studio Solution File, Format Version 1.00
+Project("{BDD4A1A1-7A1F-11D0-AC13-00A0C91E29D5}") = "localhost/repository", "Repository.vip", "{FB7678B4-7370-40AB-AE46-E24B6FDD2BA1}"
+	ProjectSection(SourceCodeControl) = preProject
+		SccAuxPath = 
+		WebServer = http://localhost
+		WebName = repository
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(LocalDeployment) = postSolution
+		StartupProject = {FB7678B4-7370-40AB-AE46-E24B6FDD2BA1}
+	EndGlobalSection
+	GlobalSection(BuildOrder) = postSolution
+		0 = {FB7678B4-7370-40AB-AE46-E24B6FDD2BA1}
+	EndGlobalSection
+	GlobalSection(DeploymentRoot) = postSolution
+	EndGlobalSection
+EndGlobal

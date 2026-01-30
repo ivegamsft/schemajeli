@@ -1,0 +1,412 @@
+<SCRIPT LANGUAGE="VBScript">
+Sub CloseWindow
+   self.Close
+End Sub
+</SCRIPT>
+<HTML>
+<HEAD>
+<TITLE>?? Report help-Navistar Repository System</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF" link="#003399" alink="#003399" vlink="#003399" text="#000000">
+<A NAME="#TOP"></A>
+<TABLE BORDER="0" ALIGN="center" WIDTH="100%" CELLPADDING="0" CELLSPACING="0">
+<TR>
+<TD COLSPAN="4" HEIGHT="10" ALIGN="center"><FONT FACE="Verdana" SIZE="2"><H3><B>Help</B>-Generating Reports
+</H3>
+</FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4">
+<FONT FACE="Verdana" SIZE="2">
+There are many different types of reports you can generate from the Navistar Repository System.<BR>
+The relational object and it's valid report types are listed in the table below.<BR>
+For a detailed explanation on each report, follow the associated link.
+</FONT>
+</TD>
+<TD COLSPAN="4" HEIGHT="20">&nbsp;
+</TD>
+</TR>
+</TR>
+</TABLE>
+<TABLE BORDER="0" ALIGN="center" WIDTH="100%" BGCOLOR="#CCCC99" CELLPADDING="2" CELLSPACING="0">
+<TR>
+    <TD COLSPAN="1"><FONT FACE="Verdana" SIZE="2"><B><A HREF="#RelObj">Relational Object</A></B></FONT></TD>
+    <TD COLSPAN="3"><FONT FACE="Verdana" SIZE="2"><B>Report Types Generated</B></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#CCCC99"><FONT FACE="Verdana" SIZE="2">&nbsp;</FONT></TD>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><B>Summary</B></FONT></TD>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><B>Detail</B></FONT></TD>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><B>Full</B></FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Server">Server</A></FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Database">Database</A></FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Table">Table</A></FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+  </TR>
+  <TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Element">Element</A></FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD BGCOLOR="#FFFFFF"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TABLE BORDER="0" ALIGN="center" WIDTH="80%" CELLPADDING="2" CELLSPACING="0">
+<TR>
+<TD HEIGHT="500">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#RelObj"><FONT FACE="Verdana" SIZE="3"><B>Relational Object</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;A Relational Object is a top-level objects that the Navistar Repository
+stores.  For example; Databases are contained in servers therefore servers are the top-level/parent object of databases.
+All of the objects contained in the repository are stored using the parent-child relationship, and this relationship is enforced by 
+strict rules incorporated within the core of the repository.  In some instances, the parent object will not be found.  This is due
+to the lack of data available during the cutover from MSP.  In these cases, a "N/A" or null values will be displayed.  All new
+objects entered will be required to follow the parent-child relationship.
+</FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="20">
+</TD>
+</TR>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="100">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Server"><FONT FACE="Verdana" SIZE="3"><B>Server</A></FONT></B><BR>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2">A summary report for a server will display the following meta-data for the selected server:
+<P>
+<LI>Server Name:  The Navistar Server name
+<LI>No of Databases:  The number of databases contained in this server
+<LI>OS Name:  The operating system of the server i.e. UNIX or Windows NT
+<LI>OS Version:  The current version of the server operating system
+<LI>Location Code:  The physical location code of the server i.e. BRK = Brookfield
+<!--
+<LI>Create Date:  The date that the server meta-data was entered into the system
+-->
+<LI>Created By:  The user id of the user that entered the server into the system
+<LI>Last Modified:  The data that the server meta-data was last updated
+<LI>Last Modified By:  The user id of the user that last updated the server meta-data
+<LI>Description:  A short description of the server
+  <P><UL><B>Children</B></P>
+  <LI>Database Name:  The ASC code name for the database
+  <LI>Database Description:  A short description of the database
+  <LI>Status:  The current status code of the database i.e. DVLP=Development
+  <LI>No of Tables:  The number of tables this database contains
+  </UL>
+</UL>
+</FONT>
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="100">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Database"><FONT FACE="Verdana" SIZE="3"><B>Databases</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="3"><FONT FACE="Verdana" SIZE="2">You can generate 2 types of reports for a database; a <B>Detail</B> and a <B>Full</B> report.<P>
+</TR>
+</TD>
+<TR>
+<TD>
+<TABLE BORDER="1" WIDTH="80%" ALIGN="center">
+<TR>
+    <TD COLSPAN="1"><FONT FACE="Verdana" SIZE="2"><B>Property</A></B></FONT></TD>
+    <TD COLSPAN="2" ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Report Type</B></FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">&nbsp;</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Detail</B></FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Full</B></FONT></TD>
+    </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Name</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Server/Parent Name</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Status</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">No of Tables</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">RDBMS Name</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">RDBMS Version</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+<!--
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Create Date</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+-->
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Created By</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Last Modified</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Last Modified By</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Description</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">List of Tables</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Table Information</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">(Status & No of elements)</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">List of Elements</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Element Information</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+</TABLE>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="20">&nbsp;
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center">
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="100">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Table"><FONT FACE="Verdana" SIZE="3"><B>Table</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="3"><FONT FACE="Verdana" SIZE="2">You can generate 2 types of reports for a table; a <B>Summary</B> and a <B>Detail</B> report.<P>
+</TR>
+</TD>
+<TR>
+<TD>
+<TABLE BORDER="1" WIDTH="80%" ALIGN="center">
+<TR>
+    <TD COLSPAN="1"><FONT FACE="Verdana" SIZE="2"><B>Property</A></B></FONT></TD>
+    <TD COLSPAN="2" ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Report Type</B></FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">&nbsp;</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Summary</B></FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2"><B>Detail</B></FONT></TD>
+    </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Name</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Database/Parent Name</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Status</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">No of Elements</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Owner</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+<!--
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Create Date</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+-->
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Created By</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Last Modified</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Last Modified By</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Description</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">List of Elements</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Element Information</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y<BR>(Summary)</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y<BR>(Detail)</FONT></TD>
+  </TR>
+  <TR>
+    <TD><FONT FACE="Verdana" SIZE="2">Element Description</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">N</FONT></TD>
+    <TD ALIGN="center"><FONT FACE="Verdana" SIZE="2">Y</FONT></TD>
+  </TR>
+</TABLE>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="20">&nbsp;
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="100">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Element"><FONT FACE="Verdana" SIZE="3"><B>Element</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2">A detail report for an element will display the following meta-data for the selected element:
+<P>
+<LI>Element Business Name:  The full business name of an element
+<LI>Status:  The current status code of the element i.e. DVLP= In Development
+<LI>No of Tables Where Used:  The table name status, where the element is currently being used
+<!--
+<LI>Create Date:  The date that the server meta-data was entered into the system
+-->
+<LI>Created By:  The user id of the user that entered the server into the system
+<LI>Last Modified:  The data that the server meta-data was last updated
+<LI>Last Modified By:  The user id of the user that last updated the server meta-data
+<LI>Element Dictionary Name:  The abbreviated business name, separated by hyphens
+<LI>Element Column Name:  The abbreviated business name, separated by underscores, that is used to generate the DDL report.
+    The column name has less characters than the dictionary name, because of the 18 character limit to column names designated by DB2
+<LI>Data Type:  The data type of the element
+<LI>Length:  The logical length of the element
+<LI>Decimal Length:  If the data type requires decimal places, this is the number of places used by the element
+<LI>Description:  A short description of the element
+  <P><UL><B>Tables Where Used</B></P>
+  <LI>Table Name:  The table name where this element is currently being used
+  <LI>Status:  The current status code of the table i.e. DVLP=Development
+  </UL>
+</UL>
+<TR>
+<TD HEIGHT="20">&nbsp;
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+</TABLE>
+</BODY>
+</HTML>

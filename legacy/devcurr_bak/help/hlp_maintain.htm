@@ -1,0 +1,223 @@
+<SCRIPT LANGUAGE="VBScript">
+Sub CloseWindow
+   self.Close
+End Sub
+</SCRIPT>
+<HTML>
+<HEAD>
+<TITLE>?? Maintain help - Navistar Repository System </TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF" link="#003399" alink="#003399" vlink="#003399" text="#000000">
+<A NAME="#TOP"></A>
+<TABLE BORDER="0" ALIGN="center" WIDTH="100%" CELLPADDING="0" CELLSPACING="0">
+<TR>
+<TD COLSPAN="4" HEIGHT="10" ALIGN="center"><FONT FACE="Verdana" SIZE="2"><H3><B>Help</B>-Maintain Relational Objects
+</H3>
+</FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4">
+<FONT FACE="Verdana" SIZE="2">
+There are three Relational Objects that can be maintained using 
+the Navistar Repository System.  For an explanation of each maintenance process 
+please follow the associated link.
+ 
+</FONT>
+</TD>
+<TR>
+<TD COLSPAN="4" HEIGHT="20">&nbsp;
+</TD>
+</TR>
+</TR>
+</TABLE>
+<TABLE BORDER="0" ALIGN="center" WIDTH="45%" BGCOLOR="#CCCC99" CELLPADDING="2" CELLSPACING="0">
+
+<TR>
+    <TD COLSPAN="1"><FONT FACE="Verdana" SIZE="2"><B><A HREF="#RelObj">Relational Object</A></B></FONT></TD>
+</TR>
+<TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Database">Database</A></FONT></TD>
+</TR>
+<TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Table">Table</A></FONT></TD>
+</TR>
+<TR>
+    <TD BGCOLOR="#EEEECC"><FONT FACE="Verdana" SIZE="2"><A HREF="#Element">Element</A></FONT></TD>
+</TR>
+
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+
+<TABLE BORDER="0" ALIGN="left" WIDTH="100%" CELLPADDING="0" CELLSPACING="0">
+
+
+</TABLE>
+<TABLE BORDER="0" ALIGN="center" WIDTH="100%" CELLPADDING="2" CELLSPACING="0">
+<TR>
+<TD HEIGHT="500">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#RelObj"><FONT FACE="Verdana" SIZE="3"><B>Relational Object</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2"><P>&nbsp;&nbsp;&nbsp;&nbsp;A Relational Object is a top-level objects that the Navistar Repository
+stores.  For example; Databases are contained in servers therefore servers are the top-level/parent object of databases.
+All of the objects contained in the repository are stored using the parent-child relationship, and this relationship is enforced by 
+strict rules incorporated within the core of the repository.  In some instances, the parent object will not be found.  This is due
+to the lack of data available during the cutover from MSP.  In these cases, a "N/A" or null values will be displayed.  All new
+objects entered will be required to follow the parent-child relationship.
+</FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="20">
+</TD>
+</TR>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TD HEIGHT="100">&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><A NAME="#Database"><FONT FACE="Verdana" SIZE="3"><B>Database</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2"> The Database maintenance screen can be used to enter, delete and update
+     databases' meta-data.<br>  
+     The following fields are displayed on the Database maintenance screen.
+  
+<P>
+<LI><b>Server:</b>  The Navistar Server name. 
+<LI><b>Database Business Name:</b> A free-form business description of the database.
+<LI><b>Database Name:</b> The database name, beginning with the ASC code.
+<LI><b>RDBMS:</b> Vendor's relational database name, for example "Informix" 
+<LI><b>RDBMS Version:</b> Database's latest release/version number.  
+<LI><b>Description:</b> A short description of the database.
+</font>
+</TD>
+</TR>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="140">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Table"><FONT FACE="Verdana" SIZE="3"><B>Table</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2"> The Table maintenance screen can be used to enter
+         and update tables' meta-data.<br>
+         The following fields are displayed on the Table maintenance screen.
+
+<LI><b>Table Name:</b>  The Table Name, beginning with the ASC Code.
+<LI><b>Status:</b>  The current status code of the table i.e. DVLP=Development
+<LI><b>Database:</b> The name of the database that the table belongs to.  This field will not be 
+validated unless it's keyed in.  Please enter the database meta-data through the Database Maintenance screen.
+<LI><b>Description:</b> A short description of the table.
+<LI><b>Move/Remove:</b> Checkboxes to tag the elements to be moved to another location
+within the table or to remove an alement from the table. 
+<LI><b>Insert After:</b> Checkboxes to tag the insertion point for adding new elements
+or moving the elements within the table.
+<LI><b>Elements:</b> A list of elements that are associated with the table.
+<LI><b>Key:</b> A number for the primary key of the table.  This number will be used 
+to generate an index within the DDL.
+<LI><b>Status:</b> The current status code of the element i.e. DVLP= In Development. 
+</font>
+<P>
+<FONT FACE="Verdana" SIZE="3"><B>Table Maintenance Screen Navigation</A></FONT></B><br>
+<br>
+<FONT FACE="Verdana" SIZE="2"> Elements can be added to a table by entering search criteria or a full 
+element name into the "SEARCH" box.  If search criteria is too general, the screen
+will prompt to enter a more specific one.<br>
+By default, the elements are added to the back of the table, but the insertion point can
+be specified by checking off the "Insert After" box next to the element after which the new element
+is to be inserted.<br>
+An element can be removed from the table by checking off the box next to the element
+to be removed and clicking on "Move/Remove" button.<br>
+An element or a group of elements can be moved to a new location within the table by
+checking off the element(s) to be moved in the "Move/Remove" column and clicking on
+the insertion point in the "Insert After" column. 
+<P>
+<b>Changes to table meta-data WILL NOT be applied unless the "DONE" button is clicked.</b>   
+<p>
+<p>
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD HEIGHT="130">&nbsp;
+</TD>
+</TR>
+<TR>
+<TD><A NAME="#Element"><FONT FACE="Verdana" SIZE="3"><B>Element</A></FONT></B>
+</TD>
+</TR>
+<TR>
+<TD><FONT FACE="Verdana" SIZE="2">
+  <P>The Element maintenance screen can be used to enter
+  update and delete element meta-data.  When elements are being created, a developer 
+  enters a business name for the element.  A business name consists of a term/prime word
+  and a class/modifier word.  <U>All elements must include a class word.</U>  When the developer
+  clicks submit, a dictionary name, and a column name is generated from the repository.  The dictionary 
+  name consists of the terms entered in the business name in their abbreviated form, separated by hyphens.  
+  The column name is also the abbreviated business name however, it is separated by underscores.  If the 
+  column name is longer than the allowed 18 character limit, the developer will be prompted to shorten the 
+  column name name.<br>
+  The following fields are displayed on the Element maintenance screen:
+<P>
+<UL>
+<LI><b>Status:</b>  The current status code of the element i.e. DVLP= In Development
+<LI><b>Business Name:</b>  The full business name of an element.
+<LI><b>Dictionary Name:</b>  The abbreviated business name, separated by hyphens.
+<LI><b>Column Name:</b>  The abbreviated business name, separated by underscores, that is used to generate the DDL report.
+    The column name has less characters than the dictionary name, because of the 18 character limit to column names designated by DB2.
+<LI><b>Data Type:</b>  The data type of the element.
+<LI><b>Length:</b>  The logical length of the element.
+<LI><b>Decimal Length:</b>  If the data type requires decimal places, this is the number of places used by the element.
+<LI><b>Description:</b>  A short description of the element.
+ </UL>
+<TR>
+<TD HEIGHT="20">&nbsp;
+</TD>
+<TR>
+<TD BGCOLOR="#CCCC99" ALIGN="center" >
+<FONT FACE="Verdana" SIZE="1"><A HREF="#TOP">Back to Top</A></FONT>
+</TD>
+</TR>
+<TR>
+<TD COLSPAN="4" ALIGN="center"><A HREF="close" ONCLICK="CloseWindow()"><FONT FACE="Verdana" SIZE="1">Close help</A></FONT>
+</TD>
+</TR>
+</TABLE>
+</BODY>
+</HTML>

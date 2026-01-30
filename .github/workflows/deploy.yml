@@ -1,0 +1,174 @@
+name: Deploy to Azure
+
+on:
+  workflow_run:
+    workflows: ["Backend CI", "Frontend CI"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://staging.schemajeli.example.com
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy Backend to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: schemajeli-backend-staging
+          images: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+      
+      - name: Deploy Frontend to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_STAGING }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/src/frontend"
+          output_location: "dist"
+      
+      - name: Run smoke tests
+        run: |
+          curl -f https://staging.schemajeli.example.com/health || exit 1
+          curl -f https://staging-api.schemajeli.example.com/health || exit 1
+      
+      - name: Notify deployment
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Staging deployment ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Staging deployment *${{ job.status }}* for commit ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://schemajeli.example.com
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Create database backup
+        run: |
+          az postgres flexible-server backup create \
+            --resource-group schemajeli-prod-rg \
+            --name schemajeli-db-prod \
+            --backup-name "pre-deployment-$(date +%Y%m%d-%H%M%S)"
+      
+      - name: Deploy Backend to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: schemajeli-backend-prod
+          slot-name: staging
+          images: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+      
+      - name: Run health checks on staging slot
+        run: |
+          for i in {1..30}; do
+            if curl -f https://schemajeli-backend-prod-staging.azurewebsites.net/health; then
+              echo "Health check passed"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Health check failed after 30 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+      
+      - name: Swap staging to production
+        run: |
+          az webapp deployment slot swap \
+            --resource-group schemajeli-prod-rg \
+            --name schemajeli-backend-prod \
+            --slot staging \
+            --target-slot production
+      
+      - name: Deploy Frontend to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/src/frontend"
+          output_location: "dist"
+      
+      - name: Run production smoke tests
+        run: |
+          curl -f https://schemajeli.example.com/health || exit 1
+          curl -f https://api.schemajeli.example.com/health || exit 1
+      
+      - name: Notify deployment
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Production deployment ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚀 Production deployment *${{ job.status }}* for commit ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          az webapp deployment slot swap \
+            --resource-group schemajeli-prod-rg \
+            --name schemajeli-backend-prod \
+            --slot production \
+            --target-slot staging

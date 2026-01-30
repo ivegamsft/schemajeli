@@ -1,0 +1,82 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Sub Session_OnStart
+ ON ERROR RESUME NEXT
+ Session.Timeout=60
+ 'Change this to turn off app
+ bNoAccess = false
+ If bNoAccess Then
+     session("error") = "99-The Navistar Repository is currently off-Line.<BR>Please try again later."
+     response.redirect("scripts/errors.asp")
+End IF    
+ set rs = server.createobject("ADODB.Recordset")
+ If err <> 0 Then
+     session("error") = "1-Could Not Create ADO Object"
+     response.redirect("scripts/errors.asp")
+ End If
+
+ set con = server.createobject("ADODB.Connection")
+ If err <> 0 Then
+     session("error") = "2-Could Not Connect To ADO Object"
+     Set rs = nothing
+     response.redirect("scripts/errors.asp")
+ End If
+
+'This is the prod box
+'con.open "irm_a01 brkdbpx02", "yzdbnrs1", "zz99tp1"
+
+'This is the dev box
+'con.open "irm_a01 brkdbpx03", "yzdbnrs1", "zz99tp1"
+
+ 'If err <> 0 Then
+ '    session("error") = "3-Could Not Open Database"
+ '    Set rs = nothing
+ '    response.redirect("scripts/errors.asp")
+ 'End If
+
+ 'rs.activeconnection = con
+ set session("rs") = rs
+ set session("con") = con
+      BType = Request.ServerVariables("HTTP_USER_AGENT")
+      IEChk = inStr(BType, "MSIE")
+      If IEChk > 0 THEN
+         IEVer = Mid(BType, IEChk+5, 4)
+         If Mid(IEVer,4,1) = ";" Then IEVer = Mid(IEVer,1,3) + "0" 
+         IEVerN = FormatNumber(IEVer)
+      ELSE
+         NNChk = inStr(BType, "Mozilla/")
+         If NNChk > 0 THEN
+            NNVer = Mid(BType, NNChk+8, 3)
+            NNVerN = FormatNumber(NNVer)
+         END IF
+      END IF
+
+      If Not IEVerN >= 4.01 OR NNVerN > 4.0 THEN
+         session("error") = "4-The Navistar Repository System requires<br>"
+         session("error") = session("error") & "<A HREF=http://wwwnio.navistar.com/intranet/download.htm>Microsoft Internet Explorer Version 4.01 or higher</a><br>"
+         session("error") = session("error") & " OR <A HREF=http://wwwnio.navistar.com/intranet/download.htm>Netscape Navigator 4.0 or higher.</A>"
+         response.redirect("scripts/errors.asp")
+      END IF
+	  
+'Modify this variable when the project is migrated to a production server
+session("savepath")= Server.MapPath("\repository")
+	  
+'sqlQuery="Select * from irma15_user"
+'rs.Open(sqlQuery)
+'If rs.BOF=-1 then
+'    session("error") = "5-The Navistar Repository System is currently offline.<br>"
+'    response.redirect("scripts/errors.asp")
+'End If
+End Sub
+
+</SCRIPT>
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Sub Session_OnEnd
+	On Error Resume Next
+  	rs.close
+  	con.close
+  	set rs = nothing
+  	set con = nothing
+	session.abandon
+End Sub
+</SCRIPT>
