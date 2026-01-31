@@ -17,6 +17,23 @@ resource "random_password" "postgres" {
   special = true
 }
 
+# Private DNS Zone for PostgreSQL (must be created before flexible server)
+resource "azurerm_private_dns_zone" "postgres" {
+  name                = "postgres.database.azure.com"
+  resource_group_name = var.resource_group_name
+
+  tags = var.tags
+}
+
+# Link Private DNS Zone to VNet
+resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
+  name                  = "${var.project_name}-${var.environment}-dns-link"
+  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
+  resource_group_name   = var.resource_group_name
+  virtual_network_id    = var.vnet_id
+  registration_enabled  = false
+}
+
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "main" {
   name                   = "${var.project_name}-${var.environment}-postgres"
@@ -48,23 +65,6 @@ resource "azurerm_postgresql_flexible_server_database" "main" {
   server_id = azurerm_postgresql_flexible_server.main.id
   charset   = "UTF8"
   collation = "en_US.utf8"
-
-# Private DNS Zone for PostgreSQL
-resource "azurerm_private_dns_zone" "postgres" {
-  name                = "postgres.database.azure.com"
-  resource_group_name = var.resource_group_name
-
-  tags = var.tags
-}
-
-# Link Private DNS Zone to VNet
-resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "${var.project_name}-${var.environment}-dns-link"
-  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-}
 }
 
 # Firewall rule for local development (dev only)
