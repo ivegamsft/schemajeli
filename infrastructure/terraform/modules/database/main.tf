@@ -24,7 +24,6 @@ resource "azurerm_postgresql_flexible_server" "main" {
   version                = var.postgres_version
   backup_retention_days  = var.backup_retention_days
 
-  delegated_subnet_id           = var.subnet_id
   public_network_access_enabled = true
 
   # Enable Azure AD authentication for RBAC-based access
