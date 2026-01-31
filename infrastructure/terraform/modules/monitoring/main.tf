@@ -69,7 +69,7 @@ resource "azurerm_monitor_metric_alert" "high_error_rate" {
     metric_name      = "requests/failed"
     operator         = "GreaterThan"
     threshold        = 10
-    aggregation      = "Total"
+    aggregation      = "Count"
   }
 
   action {
