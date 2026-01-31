@@ -9,6 +9,8 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import serverRoutes from './routes/server.routes.js';
+import databaseRoutes from './routes/database.routes.js';
 
 const app: Application = express();
 
@@ -40,6 +42,8 @@ app.get('/health', (_req, res) => {
 const apiPrefix = config.api.prefix;
 app.use(`${apiPrefix}/auth`, authRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
+app.use(`${apiPrefix}/servers`, serverRoutes);
+app.use(`${apiPrefix}/databases`, databaseRoutes);
 
 // Error handling (must be last)
 app.use(errorHandler);
