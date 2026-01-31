@@ -3,9 +3,10 @@ import { Plus, Database as DatabaseIcon, Trash2, Edit, Server as ServerIcon } fr
 import { databaseService } from '../services/databaseService';
 import { serverService } from '../services/serverService';
 import { useAuth } from '../hooks/useAuth';
-import type { Database, Server } from '../types';
+import type { Database, Server, CreateDatabaseData, UpdateDatabaseData } from '../types';
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
+import DatabaseFormModal from '../components/DatabaseFormModal';
 
 export default function DatabasesPage() {
   const { hasPermission } = useAuth();
@@ -15,6 +16,9 @@ export default function DatabasesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedServer, setSelectedServer] = useState<number | undefined>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDatabase, setEditingDatabase] = useState<Database | undefined>();
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     loadServers();
@@ -62,6 +66,30 @@ export default function DatabasesPage() {
 
   const getServerName = (serverId: number) => {
     return servers.find((s) => s.id === serverId)?.name || 'Unknown';
+  };
+
+  const handleCreate = () => {
+    setEditingDatabase(undefined);
+    setModalMode('create');
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (database: Database) => {
+    setEditingDatabase(database);
+    setModalMode(
+            onClick={handleCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+          
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (data: CreateDatabaseData | UpdateDatabaseData) => {
+    if (modalMode === 'create') {
+      await databaseService.create(data as CreateDatabaseData);
+    } else if (editingDatabase) {
+      await databaseService.update(editingDatabase.id, data as UpdateDatabaseData);
+    }
+    loadDatabases();
   };
 
   return (
@@ -177,6 +205,9 @@ export default function DatabasesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(database.createdAt)}
                     </td>
+                          onClick={() => handleEdit(database)}
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                        
                     {hasPermission('EDITOR') && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-primary-600 hover:text-primary-900 mr-3">
@@ -216,6 +247,15 @@ export default function DatabasesPage() {
                 disabled={page === totalPages}
                 className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
+
+      <DatabaseFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
+        database={editingDatabase}
+        servers={servers}
+        mode={modalMode}
+      />
                 Next
               </button>
             </div>
