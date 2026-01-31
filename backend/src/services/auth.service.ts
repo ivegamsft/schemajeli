@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { config } from '../config/config.js';
 import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -16,18 +16,24 @@ export class AuthService {
    * Generate access token (short-lived)
    */
   static generateAccessToken(payload: TokenPayload): string {
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.accessTokenExpiry,
-    });
+    // @ts-expect-error - JWT types have issues with expiresIn in newer versions
+    return jwt.sign(
+      payload,
+      config.jwt.secret,
+      { expiresIn: config.jwt.accessTokenExpiry }
+    );
   }
 
   /**
    * Generate refresh token (long-lived)
    */
   static generateRefreshToken(payload: TokenPayload): string {
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.refreshTokenExpiry,
-    });
+    // @ts-expect-error - JWT types have issues with expiresIn in newer versions
+    return jwt.sign(
+      payload,
+      config.jwt.secret,
+      { expiresIn: config.jwt.refreshTokenExpiry }
+    );
   }
 
   /**
