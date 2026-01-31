@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Server as ServerIcon, Trash2, Edit } from 'lucide-react';
+import { Plus, Server as ServerIcon, Trash2, Edit, Download } from 'lucide-react';
 import { serverService } from '../services/serverService';
 import { useAuth } from '../hooks/useAuth';
 import type { Server, CreateServerData, UpdateServerData } from '../types';
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
+import { exportToCSV, exportToJSON, flattenObject } from '../lib/export';
 import ServerFormModal from '../components/ServerFormModal';
 
 export default function ServersPage() {
@@ -16,6 +17,7 @@ export default function ServersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | undefined>();
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     loadServers();
@@ -66,7 +68,59 @@ export default function ServersPage() {
     } else if (editingServer) {
       await serverService.update(editingServer.id, data as UpdateServerData);
     }
-    loadServers();
+    
+
+  const handleExport = (format: 'csv' | 'json') => {
+    try {
+      const exportData = servers.map(server => flattenObject({
+        id: server.id,
+        name: server.name,
+        rdbmsType: server.rdbmsType,
+        hostName: server.hostName,
+        portNumber: server.portNumber,
+        <div className="flex gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <Download className="w-5 h-5" />
+              Export
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Export as CSV
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Export as JSON
+                </button>
+              </div>
+            )}
+          </div>
+          {hasPermission('EDITOR') && (
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+            >
+              <Plus className="w-5 h-5" />
+              Add Server
+            </button>
+          )}
+        </div>
+      toast.success(`Exported ${servers.length} servers as ${format.toUpperCase()}`);
+      setShowExportMenu(false);
+    } catch (error) {
+      toast.error('Export failed');
+      console.error(error);
+    }
+  };loadServers();
   };
 
   return (

@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ServersPage from './pages/ServersPage';
 import DatabasesPage from './pages/DatabasesPage';
+import TablesPage from './pages/TablesPage';
+import TableDetailPage from './pages/TableDetailPage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -36,6 +38,14 @@ export const router = createBrowserRouter([
       {
         path: 'databases',
         element: <DatabasesPage />,
+      },
+      {
+        path: 'tables',
+        element: <TablesPage />,
+      },
+      {
+        path: 'tables/:id',
+        element: <TableDetailPage />,
       },
       {
         path: 'search',
