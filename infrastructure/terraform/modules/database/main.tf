@@ -17,23 +17,6 @@ resource "random_password" "postgres" {
   special = true
 }
 
-# Private DNS Zone for PostgreSQL (must be created before flexible server)
-resource "azurerm_private_dns_zone" "postgres" {
-  name                = "postgres.database.azure.com"
-  resource_group_name = var.resource_group_name
-
-  tags = var.tags
-}
-
-# Link Private DNS Zone to VNet
-resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "${var.project_name}-${var.environment}-dns-link"
-  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-}
-
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "main" {
   name                   = "${var.project_name}-${var.environment}-postgres"
@@ -46,16 +29,12 @@ resource "azurerm_postgresql_flexible_server" "main" {
   version                = var.postgres_version
   backup_retention_days  = var.backup_retention_days
 
-  delegated_subnet_id        = var.subnet_id
-  private_dns_zone_id        = azurerm_private_dns_zone.postgres.id
+  delegated_subnet_id           = var.subnet_id
   public_network_access_enabled = false
 
   zone = var.environment == "prod" ? "1" : null
 
-  depends_on = [
-    azurerm_private_dns_zone.postgres,
-    azurerm_private_dns_zone_virtual_network_link.postgres
-  ]
+  depends_on = []
 
   tags = var.tags
 }
