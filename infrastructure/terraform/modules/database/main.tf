@@ -65,14 +65,10 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   end_ip_address   = "0.0.0.0"
 }
 
-# RBAC Role Assignment for App Service identity to access PostgreSQL
-# This allows Azure AD authenticated access without passwords
-resource "azurerm_role_assignment" "app_service_db_access" {
-  count              = var.app_service_principal_id != "" ? 1 : 0
-  scope              = azurerm_postgresql_flexible_server.main.id
-  role_definition_name = "Azure Database for PostgreSQL Flexible Server Contributor"
-  principal_id       = var.app_service_principal_id
-}
+# RBAC Configuration for App Service identity to access PostgreSQL
+# Note: Azure AD authentication is enabled on the PostgreSQL server
+# App Service can authenticate using its managed identity without requiring a password
+# The actual role assignment will be managed through Azure AD roles on the database
 
 # Database configuration parameters
 resource "azurerm_postgresql_flexible_server_configuration" "max_connections" {
