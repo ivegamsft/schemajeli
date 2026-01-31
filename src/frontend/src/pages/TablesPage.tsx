@@ -4,9 +4,10 @@ import { Plus, Table as TableIcon, Trash2, Edit, Database as DatabaseIcon, Eye }
 import { tableService } from '../services/tableService';
 import { databaseService } from '../services/databaseService';
 import { useAuth } from '../hooks/useAuth';
-import type { Table, Database } from '../types';
+import type { Table, Database, CreateTableData, UpdateTableData } from '../types';
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
+import TableFormModal from '../components/TableFormModal';
 
 export default function TablesPage() {
   const navigate = useNavigate();
@@ -17,6 +18,9 @@ export default function TablesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedDatabase, setSelectedDatabase] = useState<number | undefined>();
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [editingTable, setEditingTable] = useState<Table | undefined>();
+  const [tableModalMode, setTableModalMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     loadDatabases();
@@ -62,7 +66,36 @@ export default function TablesPage() {
     }
   };
 
-  const handleViewDetails = (tableId: number) => {
+  const handleCreateTable = () => {
+    setEditingTable(undefined);
+    setTableModalMode('create');
+    setIsTableModalOpen(true);
+  };
+
+  const handleEditTable = (table: Table) => {
+    setEditingTable(table);
+    setTableModalMode('edit');
+    setIsTableModalOpen(true);
+  };
+
+  const handleTableSubmit = async (data: CreateTableData | UpdateTableData) => {
+    try {
+      if (tableModalMode === 'create') {
+        await tableService.create(data as CreateTableData);
+        toast.success('Table created successfully');
+      } else {
+        await tableService.update(editingTable!.id, data as UpdateTableData);
+        toast.success('Table updated successfully');
+      }
+      loadTables();
+      setIsTableModalOpen(false);
+    } catch (error) {
+      toast.error(tableModalMode === 'create' ? 'Failed to create table' : 'Failed to update table');
+      console.error(error);
+    }
+  };
+
+  const handleViewDetails = async (tableId: number) => {
     navigate(`/tables/${tableId}`);
   };
 
@@ -91,7 +124,10 @@ export default function TablesPage() {
           <p className="text-gray-600 mt-1">Manage database tables and views</p>
         </div>
         {hasPermission('EDITOR') && (
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+          <button
+            onClick={handleCreateTable}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+          >
             <Plus className="w-5 h-5" />
             Add Table
           </button>
@@ -202,7 +238,11 @@ export default function TablesPage() {
                       </button>
                       {hasPermission('EDITOR') && (
                         <>
-                          <button className="text-primary-600 hover:text-primary-900 mr-3">
+                          <button
+                            onClick={() => handleEditTable(table)}
+                            className="text-primary-600 hover:text-primary-900 mr-3"
+                            title="Edit table"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
                           {hasPermission('ADMIN') && (
@@ -246,6 +286,16 @@ export default function TablesPage() {
           )}
         </>
       )}
+
+      {/* Table Form Modal */}
+      <TableFormModal
+        isOpen={isTableModalOpen}
+        mode={tableModalMode}
+        databaseId={selectedDatabase || 0}
+        editingTable={editingTable}
+        onClose={() => setIsTableModalOpen(false)}
+        onSubmit={handleTableSubmit}
+      />
     </div>
   );
 }
