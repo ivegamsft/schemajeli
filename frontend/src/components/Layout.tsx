@@ -1,7 +1,10 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Database, Server, Search, LayoutDashboard, LogOut } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { getInitials } from '../lib/utils';
 
 export default function Layout() {
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const navigation = [
@@ -50,19 +53,22 @@ export default function Layout() {
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center">
                 <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-semibold">
-                  AU
+                  {user ? getInitials(user.firstName, user.lastName) : 'U'}
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Admin User</p>
-                  <p className="text-xs text-gray-500">admin@schemajeli.com</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500">{user?.email || ''}</p>
                 </div>
               </div>
-              <Link
-                to="/login"
+              <button
+                onClick={logout}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                title="Logout"
               >
                 <LogOut className="w-5 h-5" />
-              </Link>
+              </button>
             </div>
           </div>
         </div>
