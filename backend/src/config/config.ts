@@ -11,7 +11,7 @@ export const config = {
     url: process.env.DATABASE_URL || '',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'change-this-secret',
+    secret: (process.env.JWT_SECRET || 'change-this-secret') as string,
     accessTokenExpiry: process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m',
     refreshTokenExpiry: process.env.JWT_REFRESH_TOKEN_EXPIRY || '7d',
   },
