@@ -42,6 +42,8 @@ provider "azurerm" {
   }
 }
 
+data "azurerm_client_config" "current" {}
+
 # Resource Group
 resource "azurerm_resource_group" "main" {
   name     = "${var.project_name}-${var.environment}-rg"
@@ -89,7 +91,7 @@ module "key_vault" {
 
   database_connection_string = ""  # Will be set after database is created
   jwt_secret                 = var.jwt_secret
-  app_service_principal_id   = var.app_service_principal_id
+  app_service_principal_id   = local.effective_app_service_principal_id
 
   additional_secrets = var.additional_secrets
 
@@ -109,7 +111,7 @@ module "database" {
 
   admin_username            = var.db_admin_username
   admin_password            = module.key_vault.database_admin_password
-  app_service_principal_id  = var.app_service_principal_id
+  app_service_principal_id  = local.effective_app_service_principal_id
   database_name             = var.db_name
   postgres_version          = var.postgres_version
   sku_name                  = var.db_sku
@@ -169,7 +171,7 @@ module "storage" {
 
   account_tier             = var.storage_account_tier
   account_replication_type = var.storage_account_replication
-  app_service_principal_id = null # Will be set via separate RBAC assignment
+  app_service_principal_id = local.effective_app_service_principal_id
 
   tags = local.common_tags
 
@@ -211,4 +213,9 @@ locals {
     ManagedBy   = "Terraform"
     CostCenter  = var.cost_center
   }
+
+  effective_app_service_principal_id = coalesce(
+    var.app_service_principal_id,
+    data.azurerm_client_config.current.object_id
+  )
 }
