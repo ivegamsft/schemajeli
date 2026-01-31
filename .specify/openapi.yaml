@@ -1,0 +1,666 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli API
+  version: 0.1.0
+  description: REST API for the SchemaJeli metadata repository.
+servers:
+  - url: https://api.schemajeli.example.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 25 }
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    UserRole:
+      type: string
+      enum: [ADMIN, EDITOR, VIEWER]
+    EntityStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, ARCHIVED]
+    RdbmsType:
+      type: string
+      enum: [POSTGRESQL, MYSQL, ORACLE, DB2, INFORMIX, SQLSERVER]
+    TableType:
+      type: string
+      enum: [TABLE, VIEW, MATERIALIZED_VIEW]
+    User:
+      type: object
+      required: [id, username, email, role, isActive, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        email: { type: string, format: email }
+        fullName: { type: string }
+        role: { $ref: '#/components/schemas/UserRole' }
+        isActive: { type: boolean }
+        lastLoginAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Server:
+      type: object
+      required: [id, name, host, rdbmsType, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        host: { type: string }
+        port: { type: integer, nullable: true }
+        rdbmsType: { $ref: '#/components/schemas/RdbmsType' }
+        location: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/EntityStatus' }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Database:
+      type: object
+      required: [id, serverId, name, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        serverId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        purpose: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/EntityStatus' }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Table:
+      type: object
+      required: [id, databaseId, name, tableType, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        databaseId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        tableType: { $ref: '#/components/schemas/TableType' }
+        rowCountEstimate: { type: integer, nullable: true }
+        status: { $ref: '#/components/schemas/EntityStatus' }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Element:
+      type: object
+      required: [id, tableId, name, dataType, position, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        tableId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        dataType: { type: string }
+        length: { type: integer, nullable: true }
+        precision: { type: integer, nullable: true }
+        scale: { type: integer, nullable: true }
+        isNullable: { type: boolean }
+        isPrimaryKey: { type: boolean }
+        isForeignKey: { type: boolean }
+        defaultValue: { type: string, nullable: true }
+        position: { type: integer }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Abbreviation:
+      type: object
+      required: [id, source, abbreviation, isPrimeClass, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        source: { type: string }
+        abbreviation: { type: string }
+        definition: { type: string, nullable: true }
+        isPrimeClass: { type: boolean }
+        category: { type: string, nullable: true }
+        createdById: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AuthRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthRequest' }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /users:
+    get:
+      summary: List users
+      parameters: [ { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, role]
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                fullName: { type: string }
+                role: { $ref: '#/components/schemas/UserRole' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /users/{id}:
+    get:
+      summary: Get user
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+    put:
+      summary: Update user
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                fullName: { type: string }
+                role: { $ref: '#/components/schemas/UserRole' }
+                isActive: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+    delete:
+      summary: Delete user
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /servers:
+    get:
+      summary: List servers
+      parameters: [ { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Server' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      summary: Create server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, host, rdbmsType]
+              properties:
+                name: { type: string }
+                host: { type: string }
+                port: { type: integer }
+                rdbmsType: { $ref: '#/components/schemas/RdbmsType' }
+                location: { type: string }
+                description: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Server' }
+
+  /servers/{id}:
+    get:
+      summary: Get server
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Server' }
+    put:
+      summary: Update server
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                host: { type: string }
+                port: { type: integer }
+                rdbmsType: { $ref: '#/components/schemas/RdbmsType' }
+                location: { type: string }
+                description: { type: string }
+                status: { $ref: '#/components/schemas/EntityStatus' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Server' }
+    delete:
+      summary: Delete server
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /servers/{id}/databases:
+    get:
+      summary: List databases for a server
+      parameters: [ { $ref: '#/components/parameters/IdParam' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Database' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      summary: Create database for a server
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                purpose: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Database' }
+
+  /databases/{id}:
+    get:
+      summary: Get database
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Database' }
+    put:
+      summary: Update database
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                purpose: { type: string }
+                status: { $ref: '#/components/schemas/EntityStatus' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Database' }
+    delete:
+      summary: Delete database
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /tables/{id}:
+    get:
+      summary: Get table
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Table' }
+    put:
+      summary: Update table
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                tableType: { $ref: '#/components/schemas/TableType' }
+                status: { $ref: '#/components/schemas/EntityStatus' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Table' }
+    delete:
+      summary: Delete table
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /tables/{id}/elements:
+    get:
+      summary: List elements for a table
+      parameters: [ { $ref: '#/components/parameters/IdParam' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Element' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      summary: Create element for a table
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, dataType, position]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                dataType: { type: string }
+                length: { type: integer }
+                precision: { type: integer }
+                scale: { type: integer }
+                isNullable: { type: boolean }
+                isPrimaryKey: { type: boolean }
+                isForeignKey: { type: boolean }
+                defaultValue: { type: string }
+                position: { type: integer }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Element' }
+
+  /elements/{id}:
+    get:
+      summary: Get element
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Element' }
+    put:
+      summary: Update element
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                dataType: { type: string }
+                length: { type: integer }
+                precision: { type: integer }
+                scale: { type: integer }
+                isNullable: { type: boolean }
+                isPrimaryKey: { type: boolean }
+                isForeignKey: { type: boolean }
+                defaultValue: { type: string }
+                position: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Element' }
+    delete:
+      summary: Delete element
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /abbreviations:
+    get:
+      summary: List abbreviations
+      parameters: [ { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Abbreviation' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      summary: Create abbreviation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, abbreviation]
+              properties:
+                source: { type: string }
+                abbreviation: { type: string }
+                definition: { type: string }
+                isPrimeClass: { type: boolean }
+                category: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Abbreviation' }
+
+  /abbreviations/{id}:
+    get:
+      summary: Get abbreviation
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Abbreviation' }
+    put:
+      summary: Update abbreviation
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source: { type: string }
+                abbreviation: { type: string }
+                definition: { type: string }
+                isPrimeClass: { type: boolean }
+                category: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Abbreviation' }
+    delete:
+      summary: Delete abbreviation
+      parameters: [ { $ref: '#/components/parameters/IdParam' } ]
+      responses:
+        '204':
+          description: No Content
+
+  /search:
+    get:
+      summary: Search across entities
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        entityType: { type: string }
+                        entityId: { type: string, format: uuid }
+                        title: { type: string }
+                        snippet: { type: string }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /reports/ddl:
+    get:
+      summary: Generate DDL report
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [txt, sql, json], default: sql }
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema: { type: string }
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ddl: { type: string }
