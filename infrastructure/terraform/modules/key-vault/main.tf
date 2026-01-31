@@ -38,10 +38,17 @@ resource "azurerm_key_vault" "main" {
   tags = var.tags
 }
 
-# RBAC Role Assignment for Terraform principal
+# RBAC Role Assignment for Terraform principal - Key Vault Administrator
 resource "azurerm_role_assignment" "terraform_kv_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# RBAC Role Assignment for Terraform principal - Key Vault Secrets Officer (for secret management)
+resource "azurerm_role_assignment" "terraform_kv_secrets_officer" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets Officer"
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
