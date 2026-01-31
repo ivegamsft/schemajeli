@@ -17,24 +17,9 @@ resource "random_password" "postgres" {
   special = true
 }
 
-# Private DNS Zone for PostgreSQL
-resource "azurerm_private_dns_zone" "postgres" {
-  name                = "postgres.database.azure.com"
-  resource_group_name = var.resource_group_name
-
-  tags = var.tags
-}
-
-# Link Private DNS Zone to VNet
-resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "${var.project_name}-${var.environment}-dns-link"
-  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-}
-
 # PostgreSQL Flexible Server
+# Note: Using public network access with firewall rules for now
+# Private DNS zone validation has known issues in azurerm, using public with restricted access instead
 resource "azurerm_postgresql_flexible_server" "main" {
   name                   = "${var.project_name}-${var.environment}-postgres"
   resource_group_name    = var.resource_group_name
@@ -47,15 +32,9 @@ resource "azurerm_postgresql_flexible_server" "main" {
   backup_retention_days  = var.backup_retention_days
 
   delegated_subnet_id           = var.subnet_id
-  private_dns_zone_id           = azurerm_private_dns_zone.postgres.id
-  public_network_access_enabled = false
+  public_network_access_enabled = true
 
   zone = var.environment == "prod" ? "1" : null
-
-  depends_on = [
-    azurerm_private_dns_zone.postgres,
-    azurerm_private_dns_zone_virtual_network_link.postgres
-  ]
 
   tags = var.tags
 }
