@@ -1,0 +1,245 @@
+// This is your Prisma schema file for SchemaJeli
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User roles enumeration
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+// Server RDBMS types
+enum RdbmsType {
+  POSTGRESQL
+  MYSQL
+  ORACLE
+  DB2
+  INFORMIX
+}
+
+// Entity status enumeration
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+// Table types
+enum TableType {
+  TABLE
+  VIEW
+  MATERIALIZED_VIEW
+}
+
+// Audit action types
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+// Entity types for audit and search
+enum EntityType {
+  SERVER
+  DATABASE
+  TABLE
+  ELEMENT
+  ABBREVIATION
+  USER
+}
+
+// User model
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique @db.VarChar(50)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  fullName      String    @map("full_name") @db.VarChar(255)
+  role          Role      @default(VIEWER)
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  serversCreated       Server[]       @relation("ServerCreator")
+  databasesCreated     Database[]     @relation("DatabaseCreator")
+  tablesCreated        Table[]        @relation("TableCreator")
+  elementsCreated      Element[]      @relation("ElementCreator")
+  abbreviationsCreated Abbreviation[] @relation("AbbreviationCreator")
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+// Server model
+model Server {
+  id          String       @id @default(uuid())
+  name        String       @unique @db.VarChar(255)
+  description String?      @db.Text
+  host        String       @db.VarChar(255)
+  port        Int?
+  rdbmsType   RdbmsType    @map("rdbms_type")
+  location    String?      @db.VarChar(255)
+  status      EntityStatus @default(ACTIVE)
+  createdById String       @map("created_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  deletedAt   DateTime?    @map("deleted_at")
+
+  // Relations
+  createdBy User       @relation("ServerCreator", fields: [createdById], references: [id])
+  databases Database[]
+
+  @@index([name])
+  @@index([status])
+  @@map("servers")
+}
+
+// Database model
+model Database {
+  id          String       @id @default(uuid())
+  serverId    String       @map("server_id")
+  name        String       @db.VarChar(255)
+  description String?      @db.Text
+  purpose     String?      @db.VarChar(500)
+  status      EntityStatus @default(ACTIVE)
+  createdById String       @map("created_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  deletedAt   DateTime?    @map("deleted_at")
+
+  // Relations
+  server    Server  @relation(fields: [serverId], references: [id], onDelete: Restrict)
+  createdBy User    @relation("DatabaseCreator", fields: [createdById], references: [id])
+  tables    Table[]
+
+  @@unique([serverId, name])
+  @@index([serverId])
+  @@index([name])
+  @@index([status])
+  @@map("databases")
+}
+
+// Table model
+model Table {
+  id               String       @id @default(uuid())
+  databaseId       String       @map("database_id")
+  name             String       @db.VarChar(255)
+  description      String?      @db.Text
+  tableType        TableType    @default(TABLE) @map("table_type")
+  rowCountEstimate Int?         @map("row_count_estimate")
+  status           EntityStatus @default(ACTIVE)
+  createdById      String       @map("created_by_id")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  // Relations
+  database  Database  @relation(fields: [databaseId], references: [id], onDelete: Restrict)
+  createdBy User      @relation("TableCreator", fields: [createdById], references: [id])
+  elements  Element[]
+
+  @@unique([databaseId, name])
+  @@index([databaseId])
+  @@index([name])
+  @@index([status])
+  @@map("tables")
+}
+
+// Element (Column) model
+model Element {
+  id           String    @id @default(uuid())
+  tableId      String    @map("table_id")
+  name         String    @db.VarChar(255)
+  description  String?   @db.Text
+  dataType     String    @map("data_type") @db.VarChar(100)
+  length       Int?
+  precision    Int?
+  scale        Int?
+  isNullable   Boolean   @default(true) @map("is_nullable")
+  isPrimaryKey Boolean   @default(false) @map("is_primary_key")
+  isForeignKey Boolean   @default(false) @map("is_foreign_key")
+  defaultValue String?   @map("default_value") @db.VarChar(255)
+  position     Int
+  createdById  String    @map("created_by_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Relations
+  table     Table @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  createdBy User  @relation("ElementCreator", fields: [createdById], references: [id])
+
+  @@unique([tableId, name])
+  @@index([tableId])
+  @@index([name])
+  @@index([dataType])
+  @@map("elements")
+}
+
+// Abbreviation model
+model Abbreviation {
+  id           String   @id @default(uuid())
+  source       String   @db.VarChar(255)
+  abbreviation String   @unique @db.VarChar(100)
+  definition   String?  @db.Text
+  isPrimeClass Boolean  @default(false) @map("is_prime_class")
+  category     String?  @db.VarChar(100)
+  createdById  String   @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdBy User @relation("AbbreviationCreator", fields: [createdById], references: [id])
+
+  @@index([source])
+  @@index([abbreviation])
+  @@index([category])
+  @@map("abbreviations")
+}
+
+// Audit Log model
+model AuditLog {
+  id         String      @id @default(uuid())
+  entityType EntityType  @map("entity_type")
+  entityId   String      @map("entity_id")
+  action     AuditAction
+  userId     String      @map("user_id")
+  changes    Json?
+  ipAddress  String?     @map("ip_address") @db.VarChar(45)
+  userAgent  String?     @map("user_agent") @db.VarChar(500)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Search Index model
+model SearchIndex {
+  id         String     @id @default(uuid())
+  entityType EntityType @map("entity_type")
+  entityId   String     @map("entity_id")
+  content    String     @db.Text
+  metadata   Json?
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@index([entityType, entityId])
+  @@map("search_index")
+}
