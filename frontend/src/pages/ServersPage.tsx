@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Plus, Server as ServerIcon, Trash2, Edit } from 'lucide-react';
 import { serverService } from '../services/serverService';
 import { useAuth } from '../hooks/useAuth';
-import type { Server } from '../types';
+import type { Server, CreateServerData, UpdateServerData } from '../types';
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
+import ServerFormModal from '../components/ServerFormModal';
 
 export default function ServersPage() {
   const { hasPermission } = useAuth();
@@ -12,6 +13,9 @@ export default function ServersPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingServer, setEditingServer] = useState<Server | undefined>();
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     loadServers();
@@ -44,6 +48,27 @@ export default function ServersPage() {
     }
   };
 
+  const handleCreate = () => {
+    setEditingServer(undefined);
+    setModalMode('create');
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (server: Server) => {
+    setEditingServer(server);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (data: CreateServerData | UpdateServerData) => {
+    if (modalMode === 'create') {
+      await serverService.create(data as CreateServerData);
+    } else if (editingServer) {
+      await serverService.update(editingServer.id, data as UpdateServerData);
+    }
+    loadServers();
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
@@ -52,7 +77,10 @@ export default function ServersPage() {
           <p className="text-gray-600 mt-1">Manage your database server connections</p>
         </div>
         {hasPermission('EDITOR') && (
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+          >
             <Plus className="w-5 h-5" />
             Add Server
           </button>
@@ -130,6 +158,9 @@ export default function ServersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(server.createdAt)}
                     </td>
+                          onClick={() => handleEdit(server)}
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                        
                     {hasPermission('EDITOR') && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button className="text-primary-600 hover:text-primary-900 mr-3">
@@ -172,6 +203,14 @@ export default function ServersPage() {
                 Next
               </button>
             </div>
+
+      <ServerFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
+        server={editingServer}
+        mode={modalMode}
+      />
           )}
         </>
       )}
