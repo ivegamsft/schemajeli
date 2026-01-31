@@ -24,13 +24,13 @@ output "admin_username" {
 }
 
 output "admin_password" {
-  description = "PostgreSQL admin password"
-  value       = var.admin_password != "" ? var.admin_password : random_password.postgres.result
+  description = "PostgreSQL admin password (from Key Vault)"
+  value       = var.admin_password
   sensitive   = true
 }
 
 output "connection_string" {
   description = "PostgreSQL connection string"
-  value       = "postgresql://${azurerm_postgresql_flexible_server.main.administrator_login}:${var.admin_password != "" ? var.admin_password : random_password.postgres.result}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${azurerm_postgresql_flexible_server_database.main.name}"
+  value       = "postgresql://${azurerm_postgresql_flexible_server.main.administrator_login}:${var.admin_password}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${azurerm_postgresql_flexible_server_database.main.name}"
   sensitive   = true
 }
