@@ -268,6 +268,5 @@ variable "app_service_principal_id" {
 variable "additional_secrets" {
   description = "Additional secrets to store in Key Vault"
   type        = map(string)
-  sensitive   = true
   default     = {}
 }
