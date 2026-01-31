@@ -30,14 +30,10 @@ resource "azurerm_postgresql_flexible_server" "main" {
   backup_retention_days  = var.backup_retention_days
 
   delegated_subnet_id = var.subnet_id
-  private_dns_zone_id = azurerm_private_dns_zone.postgres.id
 
   zone = var.environment == "prod" ? "1" : null
 
-  depends_on = [
-    azurerm_private_dns_zone.postgres,
-    azurerm_private_dns_zone_virtual_network_link.postgres
-  ]
+  depends_on = []
 
   tags = var.tags
 }
