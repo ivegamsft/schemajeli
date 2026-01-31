@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, Server, Search, LayoutDashboard, LogOut } from 'lucide-react';
+import { Database, Server, Search, LayoutDashboard, LogOut, Table } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getInitials } from '../lib/utils';
 
@@ -11,6 +11,7 @@ export default function Layout() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Servers', href: '/servers', icon: Server },
     { name: 'Databases', href: '/databases', icon: Database },
+    { name: 'Tables', href: '/tables', icon: Table },
     { name: 'Search', href: '/search', icon: Search },
   ];
 
