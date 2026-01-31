@@ -8,6 +8,7 @@ import DatabasesPage from './pages/DatabasesPage';
 import TablesPage from './pages/TablesPage';
 import TableDetailPage from './pages/TableDetailPage';
 import SearchPage from './pages/SearchPage';
+import AbbreviationsPage from './pages/AbbreviationsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: 'search',
         element: <SearchPage />,
+      },
+      {
+        path: 'abbreviations',
+        element: <AbbreviationsPage />,
       },
     ],
   },
