@@ -83,6 +83,19 @@ resource "azurerm_key_vault_access_policy" "app_service" {
   ]
 }
 
+# Random password for Database
+resource "random_password" "database_admin" {
+  length  = 32
+  special = true
+}
+
+# Database admin password secret
+resource "azurerm_key_vault_secret" "database_admin_password" {
+  name         = "database-admin-password"
+  value        = random_password.database_admin.result
+  key_vault_id = azurerm_key_vault.main.id
+}
+
 # Database connection string secret
 resource "azurerm_key_vault_secret" "database_connection_string" {
   name         = "database-connection-string"

@@ -78,7 +78,25 @@ module "monitoring" {
   tags = local.common_tags
 }
 
-# Database Module
+# Key Vault Module (created first to generate database password)
+module "key_vault" {
+  source = "./modules/key-vault"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  database_connection_string = ""  # Will be set after database is created
+  jwt_secret                 = var.jwt_secret
+  app_service_principal_id   = var.app_service_principal_id
+
+  additional_secrets = var.additional_secrets
+
+  tags = local.common_tags
+}
+
+# Database Module (uses password from Key Vault)
 module "database" {
   source = "./modules/database"
 
@@ -89,40 +107,21 @@ module "database" {
   subnet_id           = module.networking.database_subnet_id
   vnet_id             = module.networking.vnet_id
 
-  admin_username        = var.db_admin_username
-  admin_password        = var.db_admin_password
-  database_name         = var.db_name
-  postgres_version      = var.postgres_version
-  sku_name              = var.db_sku
-  storage_mb            = var.db_storage_mb
-  backup_retention_days = var.db_backup_days
-  max_connections       = var.db_max_connections
-  allow_local_dev       = var.environment == "dev"
-  allow_azure_services  = true
+  admin_username            = var.db_admin_username
+  admin_password            = module.key_vault.database_admin_password
+  app_service_principal_id  = var.app_service_principal_id
+  database_name             = var.db_name
+  postgres_version          = var.postgres_version
+  sku_name                  = var.db_sku
+  storage_mb                = var.db_storage_mb
+  backup_retention_days     = var.db_backup_days
+  max_connections           = var.db_max_connections
+  allow_local_dev           = var.environment == "dev"
+  allow_azure_services      = true
 
   tags = local.common_tags
 
-  depends_on = [module.networking]
-}
-
-# Key Vault Module
-module "key_vault" {
-  source = "./modules/key-vault"
-
-  project_name        = var.project_name
-  environment         = var.environment
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-
-  database_connection_string = module.database.connection_string
-  jwt_secret                 = var.jwt_secret
-  app_service_principal_id   = var.app_service_principal_id
-
-  additional_secrets = var.additional_secrets
-
-  tags = local.common_tags
-
-  depends_on = [module.database]
+  depends_on = [module.networking, module.key_vault]
 }
 
 # App Service Module
@@ -138,7 +137,7 @@ module "app_service" {
 
   database_host     = module.database.server_fqdn
   database_user     = module.database.admin_username
-  database_password = module.database.admin_password
+  database_password = module.key_vault.database_admin_password
   database_name     = module.database.database_name
 
   jwt_secret = var.jwt_secret

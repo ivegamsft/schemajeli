@@ -4,18 +4,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.58"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
   }
 }
 
-# Random password for PostgreSQL
-resource "random_password" "postgres" {
-  length  = 32
-  special = true
-}
+# Data source for current client config
+data "azurerm_client_config" "current" {}
 
 # PostgreSQL Flexible Server
 # Note: Using public network access with firewall rules for now
@@ -25,7 +18,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   resource_group_name    = var.resource_group_name
   location               = var.location
   administrator_login    = var.admin_username
-  administrator_password = var.admin_password != "" ? var.admin_password : random_password.postgres.result
+  administrator_password = var.admin_password  # Must be provided from Key Vault
   sku_name               = var.sku_name
   storage_mb             = var.storage_mb
   version                = var.postgres_version
@@ -33,6 +26,13 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
   delegated_subnet_id           = var.subnet_id
   public_network_access_enabled = true
+
+  # Enable Azure AD authentication for RBAC-based access
+  authentication {
+    active_directory_auth_enabled = true
+    password_auth_enabled          = true  # Allow password auth as fallback
+    tenant_id                      = data.azurerm_client_config.current.tenant_id
+  }
 
   zone = var.environment == "prod" ? "1" : null
 
@@ -63,6 +63,15 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   server_id        = azurerm_postgresql_flexible_server.main.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
+}
+
+# RBAC Role Assignment for App Service identity to access PostgreSQL
+# This allows Azure AD authenticated access without passwords
+resource "azurerm_role_assignment" "app_service_db_access" {
+  count              = var.app_service_principal_id != "" ? 1 : 0
+  scope              = azurerm_postgresql_flexible_server.main.id
+  role_definition_name = "Azure Database for PostgreSQL Flexible Server Contributor"
+  principal_id       = var.app_service_principal_id
 }
 
 # Database configuration parameters

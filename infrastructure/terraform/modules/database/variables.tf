@@ -35,10 +35,15 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "PostgreSQL admin password (auto-generated if empty)"
+  description = "PostgreSQL admin password (should be retrieved from Key Vault)"
+  type        = string
+  sensitive   = true
+}
+
+variable "app_service_principal_id" {
+  description = "Principal ID of the App Service for RBAC access"
   type        = string
   default     = ""
-  sensitive   = true
 }
 
 variable "database_name" {
