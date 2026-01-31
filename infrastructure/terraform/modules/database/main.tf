@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.80.0"
+      version = "~> 3.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.5.0"
+      version = "~> 3.5"
     }
   }
 }
@@ -46,8 +46,9 @@ resource "azurerm_postgresql_flexible_server" "main" {
   version                = var.postgres_version
   backup_retention_days  = var.backup_retention_days
 
-  delegated_subnet_id = var.subnet_id
-  private_dns_zone_id = azurerm_private_dns_zone.postgres.id
+  delegated_subnet_id        = var.subnet_id
+  private_dns_zone_id        = azurerm_private_dns_zone.postgres.id
+  public_network_access_enabled = false
 
   zone = var.environment == "prod" ? "1" : null
 
