@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, Server, Search, LayoutDashboard, LogOut, Table } from 'lucide-react';
+import { Database, Server, Search, LayoutDashboard, LogOut, Table, BookMarked } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getInitials } from '../lib/utils';
 
@@ -13,6 +13,7 @@ export default function Layout() {
     { name: 'Databases', href: '/databases', icon: Database },
     { name: 'Tables', href: '/tables', icon: Table },
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Abbreviations', href: '/abbreviations', icon: BookMarked },
   ];
 
   const isActive = (path: string) => location.pathname === path;
