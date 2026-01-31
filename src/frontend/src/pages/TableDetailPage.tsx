@@ -4,9 +4,10 @@ import { ArrowLeft, Plus, Edit, Trash2, Key, Link as LinkIcon, Download } from '
 import { tableService } from '../services/tableService';
 import { elementService } from '../services/elementService';
 import { useAuth } from '../hooks/useAuth';
-import type { Table, Element } from '../types';
+import type { Table, Element, CreateElementData, UpdateElementData } from '../types';
 import { toast } from 'sonner';
 import { exportTableWithColumns } from '../lib/export';
+import ElementFormModal from '../components/ElementFormModal';
 
 export default function TableDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,9 @@ export default function TableDetailPage() {
   const [elements, setElements] = useState<Element[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isElementModalOpen, setIsElementModalOpen] = useState(false);
+  const [editingElement, setEditingElement] = useState<Element | undefined>();
+  const [elementModalMode, setElementModalMode] = useState<'create' | 'edit'>('create');
 
   useEffect(() => {
     if (id) {
@@ -51,6 +55,35 @@ export default function TableDetailPage() {
     }
   };
 
+  const handleCreateElement = () => {
+    setEditingElement(undefined);
+    setElementModalMode('create');
+    setIsElementModalOpen(true);
+  };
+
+  const handleEditElement = (element: Element) => {
+    setEditingElement(element);
+    setElementModalMode('edit');
+    setIsElementModalOpen(true);
+  };
+
+  const handleElementSubmit = async (data: CreateElementData | UpdateElementData) => {
+    try {
+      if (elementModalMode === 'create') {
+        await elementService.create(data as CreateElementData);
+        toast.success('Column added successfully');
+      } else {
+        await elementService.update(editingElement!.id, data as UpdateElementData);
+        toast.success('Column updated successfully');
+      }
+      loadTableDetails();
+      setIsElementModalOpen(false);
+    } catch (error) {
+      toast.error(elementModalMode === 'create' ? 'Failed to add column' : 'Failed to update column');
+      console.error(error);
+    }
+  };
+
   const handleExport = (format: 'csv' | 'json') => {
     if (!table) return;
     try {
@@ -59,6 +92,35 @@ export default function TableDetailPage() {
       setShowExportMenu(false);
     } catch (error) {
       toast.error('Export failed');
+      console.error(error);
+    }
+  };
+
+  const handleCreateElement = () => {
+    setEditingElement(undefined);
+    setElementModalMode('create');
+    setIsElementModalOpen(true);
+  };
+
+  const handleEditElement = (element: Element) => {
+    setEditingElement(element);
+    setElementModalMode('edit');
+    setIsElementModalOpen(true);
+  };
+
+  const handleElementSubmit = async (data: CreateElementData | UpdateElementData) => {
+    try {
+      if (elementModalMode === 'create') {
+        await elementService.create(data as CreateElementData);
+        toast.success('Column added successfully');
+      } else {
+        await elementService.update(editingElement!.id, data as UpdateElementData);
+        toast.success('Column updated successfully');
+      }
+      loadTableDetails();
+      setIsElementModalOpen(false);
+    } catch (error) {
+      toast.error(elementModalMode === 'create' ? 'Failed to add column' : 'Failed to update column');
       console.error(error);
     }
   };
@@ -237,17 +299,24 @@ export default function TableDetailPage() {
                   </td>
                   {hasPermission('EDITOR') && (
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-primary-600 hover:text-primary-900 mr-3">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {hasPermission('ADMIN') && (
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleDeleteElement(element.id, element.name)}
-                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleEditElement(element)}
+                          className="text-primary-600 hover:text-primary-900 p-2 hover:bg-primary-50 rounded"
+                          title="Edit column"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
-                      )}
+                        {hasPermission('ADMIN') && (
+                          <button
+                            onClick={() => handleDeleteElement(element.id, element.name)}
+                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded"
+                            title="Delete column"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -256,6 +325,16 @@ export default function TableDetailPage() {
           </table>
         )}
       </div>
+
+      {/* Element Form Modal */}
+      <ElementFormModal
+        isOpen={isElementModalOpen}
+        mode={elementModalMode}
+        tableId={table?.id || 0}
+        editingElement={editingElement}
+        onClose={() => setIsElementModalOpen(false)}
+        onSubmit={handleElementSubmit}
+      />
     </div>
   );
 }
