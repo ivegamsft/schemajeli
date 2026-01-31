@@ -1,226 +1,287 @@
 # SchemaJeli
 
-> Modern database metadata repository and schema management system
+**Modern Database Metadata Repository System**
 
+[![CI Pipeline](https://github.com/ivegamsft/schemajeli/actions/workflows/ci.yml/badge.svg)](https://github.com/ivegamsft/schemajeli/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 
 ## Overview
 
-SchemaJeli is a comprehensive metadata repository system for managing enterprise database schemas, naming standards, and documentation across multiple database servers and platforms. Modernized from the legacy CompanyName Repository System (1999), SchemaJeli provides a cloud-native, web-based platform for:
+SchemaJeli is a cloud-native metadata repository system for managing and documenting database schemas across multiple servers and database platforms. Modernized from a legacy ASP-based system (1999), it provides a centralized platform for tracking servers, databases, tables, columns, and their relationships with powerful search and reporting capabilities.
 
-- **Schema Management** - Centralized repository for servers, databases, tables, and columns
-- **Naming Standards** - Enforce and document enterprise naming conventions
-- **Advanced Search** - Find schema objects across your entire data estate
-- **Reporting** - Generate schema documentation and DDL scripts
-- **Audit Trail** - Track all changes with comprehensive audit logging
-- **Role-Based Access** - Secure access control for different user types
+### 🚀 Key Features
+
+- **Multi-Database Support** - Track schemas across PostgreSQL, MySQL, Oracle, SQL Server, and Informix
+- **Comprehensive Metadata** - Document servers, databases, tables, columns with rich descriptions
+- **Powerful Search** - Full-text search across all metadata with filtering and faceting
+- **Role-Based Access Control** - ADMIN, EDITOR, and VIEWER roles with granular permissions
+- **Rich Reports** - Generate detailed reports on database schemas and metadata
+- **Modern Tech Stack** - React 18, Node.js, TypeScript, PostgreSQL, Prisma ORM
+- **RESTful API** - Complete OpenAPI 3.0 specification
+- **Cloud-Native** - Designed for Azure with Infrastructure as Code (Terraform)
+- **Developer Experience** - Comprehensive testing, CI/CD, monitoring, and documentation
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 18+ and npm 9+
-- Docker and Docker Compose
-- Git
-
-### Local Development
+## 🏃 Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourorg/schemajeli.git
+git clone https://github.com/ivegamsft/schemajeli.git
 cd schemajeli
 
-# Start all services with Docker Compose
-docker-compose up -d
-
-# Access the applications
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:3000
-# API Docs: http://localhost:3000/api-docs
-# PgAdmin: http://localhost:5050
-```
-
-### Manual Setup
-
-**Backend:**
-```bash
-cd src/backend
+# Install dependencies
 npm install
+
+# Set up environment variables
 cp .env.example .env
 # Edit .env with your configuration
+
+# Run database migrations
+npm run db:migrate
+
+# Seed the database with sample data
+npm run db:seed
+
+# Start development servers
 npm run dev
+
+# Backend: http://localhost:3000
+# Frontend: http://localhost:5173
 ```
 
-**Frontend:**
-```bash
-cd src/frontend
-npm install
-npm run dev
-```
+## 📦 Prerequisites
+
+- **Node.js**: ≥18.0.0
+- **npm**: ≥9.0.0
+- **PostgreSQL**: ≥14.0
+- **Git**: ≥2.30
 
 ## 📁 Project Structure
 
 ```
-SchemaJeli/
-├── .github/workflows/      # CI/CD pipelines
-├── .specify/               # Planning & specifications
-│   ├── spec.md            # Requirements
-│   ├── plan.md            # Architecture & migration plan
-│   ├── tasks.md           # Task breakdown
-│   └── memory/
-│       └── constitution.md # Project principles
-├── infrastructure/         # Infrastructure as Code
-│   ├── terraform/         # Azure Terraform modules
-│   └── kubernetes/        # K8s manifests
+schemajeli/
+├── .github/                # GitHub Actions workflows
+├── docs/                   # Documentation
+│   ├── design/            # Design documents
+│   └── api/               # API documentation
+├── infrastructure/         # Terraform configuration
 ├── src/
-│   ├── backend/           # Node.js/Express API
-│   └── frontend/          # React web application
-├── legacy/                # Archived ASP code (reference)
-├── docker-compose.yml     # Local development environment
-└── ARCHITECTURE.md        # Architecture documentation
+│   ├── backend/           # Node.js backend
+│   │   ├── controllers/   # Request handlers
+│   │   ├── middleware/    # Express middleware
+│   │   ├── routes/        # API routes
+│   │   ├── services/      # Business logic
+│   │   ├── prisma/        # Prisma schema & migrations
+│   │   └── utils/         # Utilities
+│   └── frontend/          # React frontend
+│       ├── components/    # React components
+│       ├── pages/         # Page components
+│       ├── hooks/         # Custom hooks
+│       ├── services/      # API clients
+│       └── store/         # Redux store
+├── tests/                 # Test files
+│   ├── integration/       # API integration tests
+│   └── e2e/              # End-to-end tests
+├── .specify/             # SpecKit working files
+└── README.md
 ```
 
 ## 🛠️ Technology Stack
 
-### Backend
-- **Runtime:** Node.js 18+ with TypeScript
-- **Framework:** Express.js
-- **Database:** PostgreSQL 14+
-- **ORM:** Prisma
-- **Auth:** JWT, bcrypt, Passport.js
-- **Testing:** Jest, Supertest
-- **API Docs:** OpenAPI/Swagger
-
 ### Frontend
-- **Framework:** React 18+ with TypeScript
-- **Build Tool:** Vite
-- **UI:** Tailwind CSS + Shadcn/UI
-- **State:** Redux Toolkit + React Query
-- **Routing:** React Router
-- **Forms:** React Hook Form + Zod
-- **Testing:** Vitest, Playwright
+- React 18, TypeScript, Vite
+- Tailwind CSS, Redux Toolkit, React Query
+- React Router, React Hook Form, Zod
+
+### Backend
+- Node.js 18+, Express.js, TypeScript
+- Prisma ORM, JWT (jsonwebtoken), bcrypt
+- Winston (logging), Joi (validation)
+
+### Database
+- PostgreSQL 14+
+- Prisma schema with migrations
 
 ### Infrastructure
-- **IaC:** Terraform for Azure
-- **Containers:** Docker
-- **Orchestration:** Kubernetes (AKS)
-- **Monitoring:** Azure Application Insights
-- **CI/CD:** GitHub Actions
+- Azure App Service, Azure Static Web Apps
+- Azure Database for PostgreSQL
+- Azure Container Registry, Application Insights
+- Terraform for Infrastructure as Code
 
-## 📖 Documentation
+### DevOps
+- GitHub Actions (CI/CD)
+- Docker, Playwright (E2E testing)
+- Vitest (unit/integration testing)
 
-- [**Architecture Guide**](ARCHITECTURE.md) - Complete architecture overview
-- [**Specification**](.specify/spec.md) - Requirements and features
-- [**Migration Plan**](.specify/plan.md) - Architecture decisions (ADRs)
-- [**Task Breakdown**](.specify/tasks.md) - Implementation tasks
-- [**Scaffold Status**](SCAFFOLD-STATUS.md) - Current progress
-- [**API Documentation**](http://localhost:3000/api-docs) - Interactive API docs (when running)
+## 💻 Development
 
-## 🔐 Security
+### Available Scripts
 
-- JWT-based authentication with refresh tokens
-- Role-based access control (Admin, Maintainer, Viewer)
-- bcrypt password hashing (12 rounds)
-- HTTPS/TLS encryption in production
-- SQL injection prevention via parameterized queries
-- CSRF protection
-- Rate limiting
-- Comprehensive audit logging
-- OWASP Top 10 compliance
+```bash
+# Development
+npm run dev              # Start backend + frontend
+npm run dev:backend      # Start backend only
+npm run dev:frontend     # Start frontend only
+
+# Building
+npm run build            # Build backend + frontend
+npm run build:backend    # Build backend TypeScript
+npm run build:frontend   # Build frontend for production
+
+# Database
+npm run db:migrate       # Run Prisma migrations
+npm run db:seed          # Seed database
+npm run db:studio        # Open Prisma Studio
+npm run db:generate      # Generate Prisma Client
+
+# Testing
+npm test                 # Run all tests
+npm run test:backend     # Backend unit tests
+npm run test:frontend    # Frontend unit tests
+npm run test:integration # API integration tests
+npm run test:e2e         # End-to-end tests
+npm run test:coverage    # Generate coverage report
+
+# Code Quality
+npm run lint             # Run ESLint
+npm run lint:fix         # Fix ESLint errors
+npm run format           # Format with Prettier
+npm run format:check     # Check Prettier formatting
+npm run type-check       # TypeScript type checking
+```
 
 ## 🧪 Testing
 
-```bash
-# Backend tests
-cd src/backend
-npm test                    # Unit tests
-npm run test:coverage       # Coverage report
-npm run test:integration    # Integration tests
+SchemaJeli follows a comprehensive testing strategy:
 
-# Frontend tests
-cd src/frontend
-npm test                    # Unit tests
-npm run test:e2e           # E2E tests with Playwright
 ```
+         ┌─────────────┐
+         │   E2E (5%)  │  ← Playwright (critical user flows)
+         ├─────────────┤
+         │Integration  │  ← Supertest (API endpoints)
+         │  (15%)      │
+         ├─────────────┤
+         │   Unit      │  ← Vitest (business logic)
+         │  (80%)      │
+         └─────────────┘
+```
+
+**Coverage Requirements:**
+- **Backend**: ≥80% coverage
+- **Frontend**: ≥70% coverage
+- **Integration**: ≥60% coverage
 
 ## 🚢 Deployment
 
-### Using Docker Compose (Development)
-```bash
-docker-compose up -d
-```
+### Deployment Environments
 
-### Using Terraform (Azure Production)
-```bash
-cd infrastructure/terraform
-terraform init
-terraform plan -var-file="environments/prod.tfvars"
-terraform apply -var-file="environments/prod.tfvars"
-```
+| Environment | URL | Branch | Auto-Deploy |
+|-------------|-----|--------|-------------|
+| **Staging** | staging.schemajeli.com | `develop` | ✅ Automatic |
+| **Production** | schemajeli.com | `main` | ⚠️ Manual approval |
 
-### Using GitHub Actions
-Push to `main` branch triggers:
-1. Build & test
-2. Security scanning
-3. Deploy to staging
-4. Manual approval for production
-5. Deploy to production
+### Deployment Process
+
+1. **Merge to `develop`**: Automatically deploys to staging
+2. **E2E tests run** on staging environment
+3. **Create PR** from `develop` to `main`
+4. **Approve and merge**: Triggers production deployment workflow
+5. **Manual approval** required before production deployment
+6. **Blue-green deployment** to production with automatic rollback on failure
+
+## 📖 Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Database Schema](docs/design/database-schema-plan.md)** - Database design and ERD
+- **[API Specification](.specify/openapi.yaml)** - OpenAPI 3.0 REST API spec
+- **[Authentication Flow](docs/design/authentication-authorization.md)** - Auth and authorization
+- **[Frontend Architecture](docs/design/frontend-architecture.md)** - React app structure
+- **[Testing Strategy](docs/design/testing-strategy.md)** - Testing approach and tools
+- **[CI/CD Pipeline](docs/design/cicd-pipeline.md)** - Deployment pipeline
+- **[Monitoring & Logging](docs/design/monitoring-logging.md)** - Observability
+- **[Legacy System Assessment](docs/design/legacy-system-assessment.md)** - Migration analysis
+
+## 🔒 Security
+
+### Security Features
+
+- ✅ JWT-based authentication with refresh tokens
+- ✅ Password hashing with bcrypt (10 salt rounds)
+- ✅ Role-based access control (RBAC)
+- ✅ Rate limiting on authentication endpoints
+- ✅ HTTPS only in production
+- ✅ Security headers (CSP, HSTS, X-Frame-Options)
+- ✅ Input validation and sanitization
+- ✅ SQL injection protection (Prisma ORM)
+- ✅ Dependency scanning (Snyk)
+- ✅ Regular security updates
+
+### Reporting Security Issues
+
+Please report security vulnerabilities to **security@schemajeli.example.com** (do not use public issues).
 
 ## 📊 Project Status
 
-| Phase | Status | Timeline |
-|-------|--------|----------|
-| **Phase 1:** Foundation | 🔄 In Progress | Weeks 1-3 |
-| **Phase 2:** Core API | ⏳ Not Started | Weeks 4-8 |
-| **Phase 3:** Frontend | ⏳ Not Started | Weeks 9-13 |
-| **Phase 4:** Testing & Deploy | ⏳ Not Started | Weeks 14-16 |
+**Current Phase**: Phase 1 - Design & Specification ✅ Complete
 
-See [SCAFFOLD-STATUS.md](SCAFFOLD-STATUS.md) for detailed progress.
+**Completed:**
+- ✅ Database schema design
+- ✅ REST API specification
+- ✅ Frontend architecture
+- ✅ Authentication & authorization design
+- ✅ Legacy system assessment
+- ✅ CI/CD pipeline design
+- ✅ Testing strategy
+- ✅ Monitoring & logging architecture
+- ✅ Core documentation
 
-## 🎯 Features
+**Next Steps:**
+- ⏳ Phase 2: Backend implementation
+- ⏳ Phase 3: Data migration
+- ⏳ Phase 4: Frontend implementation
+- ⏳ Phase 5: Integration & testing
+- ⏳ Phase 6: Deployment & cutover
 
-### ✅ Current (Legacy ASP System)
-- Server/Database/Table/Element management
-- Advanced search with wildcards
-- Standard abbreviations library
-- Multiple report types
-- DDL generation
-- Role-based access
-- Help system
-
-### 🚧 Planned (Modern System)
-- RESTful API
-- React web UI
-- Real-time search
-- Export to CSV/JSON/PDF
-- API-first design
-- Cloud-native deployment
-- Comprehensive monitoring
-- 99.5% uptime SLA
+See [docs/design/phase-1-summary.md](docs/design/phase-1-summary.md) for detailed progress.
 
 ## 🤝 Contributing
 
-1. Review [.specify/constitution.md](.specify/memory/constitution.md) for project principles
-2. Check [.specify/tasks.md](.specify/tasks.md) for available tasks
-3. Create a feature branch
-4. Make your changes
-5. Write/update tests
-6. Submit a pull request
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+### Quick Contribution Guide
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and add tests
+4. **Commit with conventional commits**: `git commit -m "feat: add amazing feature"`
+5. **Push to your fork**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
+
+### Code Style
+
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Airbnb style guide
+- **Prettier**: Automatic formatting
+- **Conventional Commits**: Required for commit messages
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Team
+## 📞 Support
 
-- **Project Lead:** [To Be Assigned]
-- **Tech Lead Backend:** [To Be Assigned]
-- **Tech Lead Frontend:** [To Be Assigned]
-- **DevOps Lead:** [To Be Assigned]
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/ivegamsft/schemajeli/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ivegamsft/schemajeli/discussions)
+- **Email**: support@schemajeli.example.com
 
-## 🆘 Support
+---
+
+**Built with ❤️ using modern web technologies**
 
 - **Documentation:** See [ARCHITECTURE.md](ARCHITECTURE.md) and `.specify/` folder
 - **Issues:** GitHub Issues
