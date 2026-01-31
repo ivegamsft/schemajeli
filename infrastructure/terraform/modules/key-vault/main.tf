@@ -28,6 +28,7 @@ resource "azurerm_key_vault" "main" {
   soft_delete_retention_days  = var.soft_delete_retention_days
   purge_protection_enabled    = var.environment == "prod"
   sku_name                    = "standard"
+  enable_rbac_authorization   = true
 
   network_acls {
     default_action = "Allow"
@@ -37,50 +38,19 @@ resource "azurerm_key_vault" "main" {
   tags = var.tags
 }
 
-# Key Vault Access Policy for current user/SP
-resource "azurerm_key_vault_access_policy" "terraform" {
-  key_vault_id = azurerm_key_vault.main.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = data.azurerm_client_config.current.object_id
-
-  key_permissions = [
-    "Get",
-    "List",
-    "Create",
-    "Delete",
-    "Update",
-  ]
-
-  secret_permissions = [
-    "Get",
-    "List",
-    "Set",
-    "Delete",
-    "Recover",
-    "Backup",
-    "Restore",
-  ]
-
-  certificate_permissions = [
-    "Get",
-    "List",
-    "Create",
-    "Delete",
-    "Update",
-  ]
+# RBAC Role Assignment for Terraform principal
+resource "azurerm_role_assignment" "terraform_kv_admin" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# Access policy for App Service
-resource "azurerm_key_vault_access_policy" "app_service" {
-  count        = var.app_service_principal_id != null ? 1 : 0
-  key_vault_id = azurerm_key_vault.main.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = var.app_service_principal_id
-
-  secret_permissions = [
-    "Get",
-    "List",
-  ]
+# RBAC Role Assignment for App Service identity
+resource "azurerm_role_assignment" "app_service_kv_secrets_user" {
+  count                = var.app_service_principal_id != "" ? 1 : 0
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.app_service_principal_id
 }
 
 # Random password for Database
