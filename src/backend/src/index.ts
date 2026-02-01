@@ -23,40 +23,94 @@ app.get('/api/v1', (_req, res) => {
 
 // Auth Routes
 app.post('/api/v1/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
+  const { email, password } = req.body as { email?: string; password?: string };
+
   // Basic validation
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+    return res.status(400).json({ status: 'error', message: 'Email and password are required' });
   }
-  
+
   // Mock authentication - in production, verify against database
   if (email === 'admin@schemajeli.com' && password === 'Admin@123') {
-    const token = 'mock-jwt-token-' + Date.now();
-    return res.json({ 
-      accessToken: token,
-      user: { email, id: '1', role: 'admin' }
+    const now = new Date().toISOString();
+    const accessToken = `mock-jwt-token-${Date.now()}`;
+    const refreshToken = `mock-refresh-token-${Date.now()}`;
+    return res.json({
+      status: 'success',
+      data: {
+        user: {
+          id: '1',
+          email,
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'ADMIN',
+          isActive: true,
+          lastLogin: now,
+          createdAt: now,
+          updatedAt: now,
+        },
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
+      },
     });
   }
-  
-  res.status(401).json({ error: 'Invalid credentials' });
-  return;
+
+  return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
 });
 
 app.post('/api/v1/auth/logout', (_req, res) => {
-  res.json({ message: 'Logged out successfully' });
-  return;
+  return res.json({ status: 'success', data: { message: 'Logged out successfully' } });
 });
 
 app.get('/api/v1/auth/verify', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ status: 'error', message: 'No token provided' });
   }
-  
+
   // Mock verification
-  res.json({ valid: true, user: { email: 'admin@schemajeli.com' } });
-  return;
+  return res.json({
+    status: 'success',
+    data: {
+      valid: true,
+      user: { email: 'admin@schemajeli.com' },
+    },
+  });
+});
+
+app.post('/api/v1/auth/refresh', (req, res) => {
+  const { refreshToken } = req.body as { refreshToken?: string };
+  if (!refreshToken) {
+    return res.status(400).json({ status: 'error', message: 'Refresh token required' });
+  }
+
+  const accessToken = `mock-jwt-token-${Date.now()}`;
+  return res.json({ status: 'success', data: { accessToken } });
+});
+
+app.get('/api/v1/auth/me', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ status: 'error', message: 'No token provided' });
+  }
+
+  const now = new Date().toISOString();
+  return res.json({
+    status: 'success',
+    data: {
+      id: '1',
+      email: 'admin@schemajeli.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'ADMIN',
+      isActive: true,
+      lastLogin: now,
+      createdAt: now,
+      updatedAt: now,
+    },
+  });
 });
 
 // Error handling middleware
