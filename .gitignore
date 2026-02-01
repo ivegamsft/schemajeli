@@ -167,6 +167,13 @@ local/
 secrets/
 .secrets/
 
+# Legacy application folder (contains old credentials and ASP code)
+# Can be pulled in separately for reference if needed
+legacy/
+devcurr_bak/
+devnew_bak/
+prodcurr_bak/
+
 # Documentation build
 docs/_build/
 docs/.docusaurus/
