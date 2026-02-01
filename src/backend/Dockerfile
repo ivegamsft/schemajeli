@@ -12,46 +12,36 @@ RUN npm ci
 
 # Copy source code
 COPY src ./src
-COPY prisma ./prisma
 
 # Build TypeScript
 RUN npm run build
-
-# Generate Prisma client
-RUN npm run prisma:generate
 
 # Runtime stage
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install wget for health checks
+RUN apk add --no-cache wget
 
 # Copy package files
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production
-
-# Copy Prisma schema and migrations
-COPY prisma ./prisma
-
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
+RUN npm ci --omit=dev
 
 # Create logs directory
 RUN mkdir -p logs
+
+# Copy built application from builder
+COPY --from=builder /app/dist ./dist
 
 # Expose port
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["/sbin/dumb-init", "--"]
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Start application
 CMD ["node", "dist/index.js"]

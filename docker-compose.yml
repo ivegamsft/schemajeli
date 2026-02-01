@@ -54,29 +54,6 @@ services:
       - schemajeli-network
     restart: unless-stopped
 
-  # Frontend (React + Vite)
-  frontend:
-    build:
-      context: ./src/frontend
-      dockerfile: Dockerfile
-    container_name: schemajeli-frontend
-    environment:
-      VITE_API_URL: http://localhost:3001
-    ports:
-      - "3000:3000"
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    networks:
-      - schemajeli-network
-    restart: unless-stopped
-
 networks:
   schemajeli-network:
     driver: bridge
@@ -84,30 +61,3 @@ networks:
 volumes:
   postgres_data:
     driver: local
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # PgAdmin (optional - database management UI)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: schemajeli-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@schemajeli.local
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-
-volumes:
-  postgres_data:
-  redis_data:
-  pgadmin_data:
-
-networks:
-  default:
-    name: schemajeli-network

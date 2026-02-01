@@ -95,24 +95,6 @@ export default function TableDetailPage() {
       console.error(error);
     }
   };
-
-  const handleCreateElement = () => {
-    setEditingElement(undefined);
-    setElementModalMode('create');
-    setIsElementModalOpen(true);
-  };
-
-  const handleEditElement = (element: Element) => {
-    setEditingElement(element);
-    setElementModalMode('edit');
-    setIsElementModalOpen(true);
-  };
-
-  const handleElementSubmit = async (data: CreateElementData | UpdateElementData) => {
-    try {
-      if (elementModalMode === 'create') {
-        await elementService.create(data as CreateElementData);
-        toast.success('Column added successfully');
       } else {
         await elementService.update(editingElement!.id, data as UpdateElementData);
         toast.success('Column updated successfully');

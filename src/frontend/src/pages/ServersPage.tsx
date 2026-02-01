@@ -78,36 +78,8 @@ export default function ServersPage() {
         rdbmsType: server.rdbmsType,
         hostName: server.hostName,
         portNumber: server.portNumber,
-        <div className="flex gap-2">
-          <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Download className="w-5 h-5" />
-              Export
-            </button>
-            {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button
-                  onClick={() => handleExport('csv')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Export as CSV
-                </button>
-                <button
-                  onClick={() => handleExport('json')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  Export as JSON
-                </button>
-              </div>
-            )}
-          </div>
-          {hasPermission('EDITOR') && (
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+        location: server.location,
+        description: server.description
             >
               <Plus className="w-5 h-5" />
               Add Server
