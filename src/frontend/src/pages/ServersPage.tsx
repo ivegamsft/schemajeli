@@ -68,7 +68,9 @@ export default function ServersPage() {
     } else if (editingServer) {
       await serverService.update(editingServer.id, data as UpdateServerData);
     }
-    
+    setIsModalOpen(false);
+    setEditingServer(null);
+  };
 
   const handleExport = (format: 'csv' | 'json') => {
     try {
@@ -80,20 +82,22 @@ export default function ServersPage() {
         portNumber: server.portNumber,
         location: server.location,
         description: server.description
-            >
-              <Plus className="w-5 h-5" />
-              Add Server
-            </button>
-          )}
-        </div>
+      }));
+      
+      if (format === 'csv') {
+        exportToCSV(exportData, 'servers');
+      } else {
+        exportToJSON(exportData, 'servers');
+      }
+      
       toast.success(`Exported ${servers.length} servers as ${format.toUpperCase()}`);
       setShowExportMenu(false);
     } catch (error) {
       toast.error('Export failed');
       console.error(error);
     }
-  };loadServers();
   };
+
 
   return (
     <div className="p-8">
@@ -229,6 +233,9 @@ export default function ServersPage() {
                 Next
               </button>
             </div>
+          )}
+        </>
+      )}
 
       <ServerFormModal
         isOpen={isModalOpen}
@@ -237,9 +244,6 @@ export default function ServersPage() {
         server={editingServer}
         mode={modalMode}
       />
-          )}
-        </>
-      )}
     </div>
   );
 }

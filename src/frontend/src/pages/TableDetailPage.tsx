@@ -95,17 +95,6 @@ export default function TableDetailPage() {
       console.error(error);
     }
   };
-      } else {
-        await elementService.update(editingElement!.id, data as UpdateElementData);
-        toast.success('Column updated successfully');
-      }
-      loadTableDetails();
-      setIsElementModalOpen(false);
-    } catch (error) {
-      toast.error(elementModalMode === 'create' ? 'Failed to add column' : 'Failed to update column');
-      console.error(error);
-    }
-  };
 
   if (loading) {
     return (
@@ -148,6 +137,7 @@ export default function TableDetailPage() {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{table.name}</h1>
+          </div>
           <div className="flex gap-2">
             <div className="relative">
               <button
@@ -174,13 +164,9 @@ export default function TableDetailPage() {
                 </div>
               )}
             </div>
-            {hasPermission('EDITOR') && (
-              <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
-                <Plus className="w-5 h-5" />
-                Add Column
-              </button>
-            )}
-          </div>    {table.tableType}
+            <div className="flex items-center gap-4">
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                {table.tableType}
               </span>
               <span className="text-sm text-gray-500">
                 {elements.length} columns

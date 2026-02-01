@@ -259,12 +259,6 @@ export default function DatabasesPage() {
         servers={servers}
         mode={modalMode}
       />
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }
