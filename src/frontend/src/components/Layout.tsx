@@ -19,9 +19,9 @@ export default function Layout() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
+      <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center h-16 px-6 border-b border-gray-200">
@@ -74,14 +74,12 @@ export default function Layout() {
             </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="pl-64">
-        <main>
-          <Outlet />
-        </main>
-      </div>
+      <main className="flex-1 min-w-0">
+        <Outlet />
+      </main>
     </div>
   );
 }
