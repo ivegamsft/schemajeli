@@ -26,6 +26,7 @@ resource "azurerm_storage_account" "main" {
   account_tier             = var.account_tier
   account_replication_type = var.account_replication_type
   min_tls_version          = "TLS1_2"
+  shared_access_key_enabled = false  # Disable key-based authentication, require managed identity
 
   network_rules {
     default_action = "Allow"
