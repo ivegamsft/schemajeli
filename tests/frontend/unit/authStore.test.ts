@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../authStore';
-import type { User, AuthTokens } from '../../types';
+import { useAuthStore } from '../../../src/frontend/src/store/authStore';
+import type { User, AuthTokens } from '../../../src/frontend/src/types';
 
 describe('authStore', () => {
   const mockUser: User = {

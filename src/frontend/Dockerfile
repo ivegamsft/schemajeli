@@ -22,7 +22,7 @@ COPY tailwind.config.js ./
 COPY eslint.config.js ./
 
 # Build application
-RUN npm run build
+RUN npm run build:prod
 
 # Runtime stage
 FROM node:18-alpine
