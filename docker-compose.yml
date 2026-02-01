@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,9 +35,9 @@ services:
       JWT_SECRET: dev_secret_change_in_prod
       JWT_EXPIRY: 3600
       LOG_LEVEL: debug
-      CORS_ORIGIN: http://localhost:8081
+      CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-8081}
     ports:
-      - "8080:3000"
+      - "${BACKEND_PORT:-8080}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,9 +59,9 @@ services:
     container_name: schemajeli-frontend
     environment:
       NODE_ENV: production
-      VITE_API_URL: http://localhost:8080
+      VITE_API_URL: http://localhost:${BACKEND_PORT:-8080}
     ports:
-      - "8081:3000"
+      - "${FRONTEND_PORT:-8081}:3000"
     depends_on:
       backend:
         condition: service_healthy
