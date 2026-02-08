@@ -16,7 +16,7 @@ export const serverService = {
   /**
    * Get a single server by ID
    */
-  async getById(id: number): Promise<Server> {
+  async getById(id: string): Promise<Server> {
     const response = await apiClient.get<{ status: string; data: Server }>(`/servers/${id}`);
     return response.data.data;
   },
@@ -32,7 +32,7 @@ export const serverService = {
   /**
    * Update an existing server
    */
-  async update(id: number, data: UpdateServerData): Promise<Server> {
+  async update(id: string, data: UpdateServerData): Promise<Server> {
     const response = await apiClient.put<{ status: string; data: Server }>(
       `/servers/${id}`,
       data
@@ -43,7 +43,7 @@ export const serverService = {
   /**
    * Delete a server
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await apiClient.delete(`/servers/${id}`);
   },
 };

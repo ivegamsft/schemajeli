@@ -5,7 +5,7 @@ export const databaseService = {
   /**
    * Get all databases with pagination
    */
-  async getAll(page = 1, limit = 10, serverId?: number): Promise<PaginatedResponse<Database>> {
+  async getAll(page = 1, limit = 10, serverId?: string): Promise<PaginatedResponse<Database>> {
     const params: Record<string, any> = { page, limit };
     if (serverId) params.serverId = serverId;
 
@@ -19,7 +19,7 @@ export const databaseService = {
   /**
    * Get a single database by ID
    */
-  async getById(id: number): Promise<Database> {
+  async getById(id: string): Promise<Database> {
     const response = await apiClient.get<{ status: string; data: Database }>(
       `/databases/${id}`
     );
@@ -29,7 +29,7 @@ export const databaseService = {
   /**
    * Get databases for a specific server
    */
-  async getByServerId(serverId: number): Promise<Database[]> {
+  async getByServerId(serverId: string): Promise<Database[]> {
     const response = await apiClient.get<{ status: string; data: Database[] }>(
       `/servers/${serverId}/databases`
     );
@@ -50,7 +50,7 @@ export const databaseService = {
   /**
    * Update an existing database
    */
-  async update(id: number, data: UpdateDatabaseData): Promise<Database> {
+  async update(id: string, data: UpdateDatabaseData): Promise<Database> {
     const response = await apiClient.put<{ status: string; data: Database }>(
       `/databases/${id}`,
       data
@@ -61,7 +61,7 @@ export const databaseService = {
   /**
    * Delete a database
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await apiClient.delete(`/databases/${id}`);
   },
 };

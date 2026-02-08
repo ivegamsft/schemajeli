@@ -9,6 +9,7 @@ interface EntraIdTokenPayload {
   email?: string;
   preferred_username?: string;
   roles?: string[]; // App roles assigned to user
+  groups?: string[]; // Azure AD group object IDs
   aud: string; // Audience
   iss: string; // Issuer
   exp: number; // Expiration
@@ -35,6 +36,30 @@ function getKey(header: any, callback: any) {
   });
 }
 
+function parseMockRoles(): string[] {
+  const raw = process.env.RBAC_MOCK_ROLES;
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((role) => role.trim())
+    .filter(Boolean);
+}
+
+function getRolesFromGroups(groups?: string[]): string[] {
+  if (!groups || groups.length === 0) return [];
+
+  const groupRoleMap: Array<[string | undefined, string]> = [
+    [process.env.RBAC_GROUP_ADMIN, 'Admin'],
+    [process.env.RBAC_GROUP_MAINTAINER, 'Maintainer'],
+    [process.env.RBAC_GROUP_VIEWER, 'Viewer'],
+  ];
+
+  return groupRoleMap
+    .filter(([groupId]) => !!groupId)
+    .filter(([groupId]) => groups.includes(groupId as string))
+    .map(([, role]) => role);
+}
+
 // Extend Express Request to include user
 declare global {
   namespace Express {
@@ -53,14 +78,15 @@ declare global {
 /**
  * Middleware to authenticate requests using Azure Entra ID JWT tokens
  */
-export function authenticateJWT(req: Request, res: Response, next: NextFunction) {
+export function authenticateJWT(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
+    res.status(401).json({
       status: 'error',
       message: 'No authorization token provided',
     });
+    return;
   }
 
   const token = authHeader.substring(7);
@@ -77,21 +103,26 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
     (err, decoded) => {
       if (err) {
         console.error('JWT verification failed:', err.message);
-        return res.status(401).json({
+        res.status(401).json({
           status: 'error',
           message: 'Invalid or expired token',
           details: process.env.NODE_ENV === 'development' ? err.message : undefined,
         });
+        return;
       }
 
       const payload = decoded as EntraIdTokenPayload;
+
+      const rolesFromGroups = getRolesFromGroups(payload.groups);
+      const roles = payload.roles && payload.roles.length > 0 ? payload.roles : rolesFromGroups;
+      const resolvedRoles = roles.length > 0 ? roles : parseMockRoles();
 
       // Attach user info to request
       req.user = {
         id: payload.oid || payload.sub,
         name: payload.name,
         email: payload.email || payload.preferred_username,
-        roles: payload.roles || [],
+        roles: resolvedRoles,
         token,
       };
 
@@ -105,12 +136,13 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
  * Usage: app.get('/admin', authenticateJWT, requireRole('Admin'), handler)
  */
 export function requireRole(...allowedRoles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({
+      res.status(401).json({
         status: 'error',
         message: 'Authentication required',
       });
+      return;
     }
 
     const userRoles = req.user.roles || [];
@@ -118,13 +150,14 @@ export function requireRole(...allowedRoles: string[]) {
 
     if (!hasPermission) {
       console.warn(`User ${req.user.id} denied access. Required: ${allowedRoles.join(', ')}, Has: ${userRoles.join(', ')}`);
-      
-      return res.status(403).json({
+
+      res.status(403).json({
         status: 'error',
         message: 'Insufficient permissions',
         required: allowedRoles,
         current: userRoles,
       });
+      return;
     }
 
     next();
@@ -142,24 +175,26 @@ export function requireAnyRole(...allowedRoles: string[]) {
  * Middleware to check if user has ALL of the specified roles
  */
 export function requireAllRoles(...requiredRoles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({
+      res.status(401).json({
         status: 'error',
         message: 'Authentication required',
       });
+      return;
     }
 
     const userRoles = req.user.roles || [];
     const hasAllRoles = requiredRoles.every((role) => userRoles.includes(role));
 
     if (!hasAllRoles) {
-      return res.status(403).json({
+      res.status(403).json({
         status: 'error',
         message: 'Insufficient permissions - all roles required',
         required: requiredRoles,
         current: userRoles,
       });
+      return;
     }
 
     next();
@@ -170,20 +205,48 @@ export function requireAllRoles(...requiredRoles: string[]) {
  * Optional authentication - doesn't fail if no token, just doesn't set req.user
  * Useful for endpoints that have public + authenticated views
  */
-export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(); // No auth provided, continue without user
+    next(); // No auth provided, continue without user
+    return;
   }
 
+  const token = authHeader.substring(7);
+
   // Try to authenticate, but don't fail
-  authenticateJWT(req, res, (err) => {
-    if (err) {
-      console.warn('Optional auth failed, continuing without user');
+  jwt.verify(
+    token,
+    getKey,
+    {
+      audience: process.env.JWT_AUDIENCE,
+      issuer: process.env.JWT_ISSUER,
+      algorithms: ['RS256'],
+    },
+      (err, decoded) => {
+      if (err) {
+        console.warn('Optional auth failed:', err.message);
+        next(); // Continue without user
+        return;
+      }
+
+      const payload = decoded as EntraIdTokenPayload;
+      const rolesFromGroups = getRolesFromGroups(payload.groups);
+      const roles = payload.roles && payload.roles.length > 0 ? payload.roles : rolesFromGroups;
+      const resolvedRoles = roles.length > 0 ? roles : parseMockRoles();
+
+      req.user = {
+        id: payload.oid || payload.sub,
+        name: payload.name,
+        email: payload.email || payload.preferred_username,
+        roles: resolvedRoles,
+        token,
+      };
+
+      next();
     }
-    next();
-  });
+  );
 }
 
 /**

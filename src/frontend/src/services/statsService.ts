@@ -15,7 +15,7 @@ export const statsService = {
   /**
    * Get server statistics
    */
-  async getServerStats(serverId: number): Promise<StatsResponse> {
+  async getServerStats(serverId: string): Promise<StatsResponse> {
     const response = await apiClient.get<{ status: string; data: StatsResponse }>(
       `/statistics/servers/${serverId}`
     );
@@ -25,7 +25,7 @@ export const statsService = {
   /**
    * Get database statistics
    */
-  async getDatabaseStats(databaseId: number): Promise<StatsResponse> {
+  async getDatabaseStats(databaseId: string): Promise<StatsResponse> {
     const response = await apiClient.get<{ status: string; data: StatsResponse }>(
       `/statistics/databases/${databaseId}`
     );

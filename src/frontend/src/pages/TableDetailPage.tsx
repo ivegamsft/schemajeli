@@ -30,8 +30,8 @@ export default function TableDetailPage() {
   const loadTableDetails = async () => {
     try {
       setLoading(true);
-      const tableData = await tableService.getById(Number(id));
-      const elementsData = await elementService.getByTableId(Number(id));
+      const tableData = await tableService.getById(id);
+      const elementsData = await elementService.getByTableId(id);
       setTable(tableData);
       setElements(elementsData);
     } catch (error) {
@@ -42,7 +42,7 @@ export default function TableDetailPage() {
     }
   };
 
-  const handleDeleteElement = async (elementId: number, name: string) => {
+  const handleDeleteElement = async (elementId: string, name: string) => {
     if (!confirm(`Are you sure you want to delete column "${name}"?`)) return;
 
     try {
@@ -173,7 +173,7 @@ export default function TableDetailPage() {
               </span>
             </div>
           </div>
-          {hasPermission('EDITOR') && (
+          {hasPermission('Maintainer') && (
             <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
               <Plus className="w-5 h-5" />
               Add Column
@@ -190,7 +190,7 @@ export default function TableDetailPage() {
         {elements.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600">No columns defined yet</p>
-            {hasPermission('EDITOR') && (
+            {hasPermission('Maintainer') && (
               <button className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
                 Add your first column
               </button>
@@ -215,7 +215,7 @@ export default function TableDetailPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Constraints
                 </th>
-                {hasPermission('EDITOR') && (
+                {hasPermission('Maintainer') && (
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -265,7 +265,7 @@ export default function TableDetailPage() {
                       )}
                     </div>
                   </td>
-                  {hasPermission('EDITOR') && (
+                  {hasPermission('Maintainer') && (
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -275,7 +275,7 @@ export default function TableDetailPage() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        {hasPermission('ADMIN') && (
+                        {hasPermission('Admin') && (
                           <button
                             onClick={() => handleDeleteElement(element.id, element.name)}
                             className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded"

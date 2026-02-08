@@ -5,7 +5,7 @@ export const tableService = {
   /**
    * Get all tables with pagination
    */
-  async getAll(page = 1, limit = 10, databaseId?: number): Promise<PaginatedResponse<Table>> {
+  async getAll(page = 1, limit = 10, databaseId?: string): Promise<PaginatedResponse<Table>> {
     const params: Record<string, any> = { page, limit };
     if (databaseId) params.databaseId = databaseId;
 
@@ -19,7 +19,7 @@ export const tableService = {
   /**
    * Get a single table by ID
    */
-  async getById(id: number): Promise<Table> {
+  async getById(id: string): Promise<Table> {
     const response = await apiClient.get<{ status: string; data: Table }>(`/tables/${id}`);
     return response.data.data;
   },
@@ -27,7 +27,7 @@ export const tableService = {
   /**
    * Get tables for a specific database
    */
-  async getByDatabaseId(databaseId: number): Promise<Table[]> {
+  async getByDatabaseId(databaseId: string): Promise<Table[]> {
     const response = await apiClient.get<{ status: string; data: Table[] }>(
       `/databases/${databaseId}/tables`
     );
@@ -45,7 +45,7 @@ export const tableService = {
   /**
    * Update an existing table
    */
-  async update(id: number, data: UpdateTableData): Promise<Table> {
+  async update(id: string, data: UpdateTableData): Promise<Table> {
     const response = await apiClient.put<{ status: string; data: Table }>(
       `/tables/${id}`,
       data
@@ -56,7 +56,7 @@ export const tableService = {
   /**
    * Delete a table
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await apiClient.delete(`/tables/${id}`);
   },
 };

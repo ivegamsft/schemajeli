@@ -1,4 +1,5 @@
-import { PublicClientApplication, LogLevel, EventType, AuthenticationResult } from '@azure/msal-browser';
+import { PublicClientApplication, LogLevel, EventType } from '@azure/msal-browser';
+import type { AuthenticationResult } from '@azure/msal-browser';
 
 // MSAL Configuration
 export const msalConfig = {
@@ -119,7 +120,7 @@ export async function getAccessToken(): Promise<string | null> {
 export function getUserRoles(): string[] {
   const account = msalInstance.getActiveAccount();
   if (!account?.idTokenClaims) return [];
-  
+
   const claims = account.idTokenClaims as any;
   return claims.roles || [];
 }
@@ -139,15 +140,37 @@ export function canEdit(): boolean {
   return hasRole('Admin') || hasRole('Maintainer');
 }
 
+function getPrimaryRole(roles: string[]): 'Admin' | 'Maintainer' | 'Viewer' {
+  if (roles.includes('Admin')) return 'Admin';
+  if (roles.includes('Maintainer')) return 'Maintainer';
+  return 'Viewer';
+}
+
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+  if (parts.length <= 1) {
+    return { firstName: fullName || 'User', lastName: '' };
+  }
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
 // Helper to get current user info
 export function getCurrentUser() {
   const account = msalInstance.getActiveAccount();
   if (!account) return null;
 
+  const roles = getUserRoles();
+  const { firstName, lastName } = splitName(account.name || account.username || 'User');
+
   return {
     id: account.localAccountId,
-    name: account.name || '',
     email: account.username,
-    roles: getUserRoles(),
+    firstName,
+    lastName,
+    role: getPrimaryRole(roles),
+    isActive: true,
+    lastLogin: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 }

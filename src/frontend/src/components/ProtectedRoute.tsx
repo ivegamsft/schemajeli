@@ -3,12 +3,20 @@ import { useAuthStore } from '../store/authStore';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  requiredRole?: 'Admin' | 'Maintainer' | 'Viewer';
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
   const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     // Redirect to login, but save the location they were trying to access
@@ -17,7 +25,7 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   // Check role-based access
   if (requiredRole && user) {
-    const roleHierarchy = { ADMIN: 3, EDITOR: 2, VIEWER: 1 };
+    const roleHierarchy = { Admin: 3, Maintainer: 2, Viewer: 1 };
     const hasAccess = roleHierarchy[user.role] >= roleHierarchy[requiredRole];
     
     if (!hasAccess) {

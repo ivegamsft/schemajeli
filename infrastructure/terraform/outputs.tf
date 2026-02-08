@@ -198,6 +198,22 @@ output "app_insights_id" {
   value       = module.monitoring.application_insights_id
 }
 
+# App Configuration Outputs
+output "app_configuration_id" {
+  description = "App Configuration resource ID"
+  value       = module.app_configuration.app_configuration_id
+}
+
+output "app_configuration_name" {
+  description = "App Configuration name"
+  value       = module.app_configuration.app_configuration_name
+}
+
+output "app_configuration_endpoint" {
+  description = "App Configuration endpoint"
+  value       = module.app_configuration.app_configuration_endpoint
+}
+
 output "app_insights_connection_string" {
   description = "Application Insights connection string"
   value       = module.monitoring.application_insights_connection_string

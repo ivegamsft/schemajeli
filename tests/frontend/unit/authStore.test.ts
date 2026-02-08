@@ -1,22 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAuthStore } from '../../../src/frontend/src/store/authStore';
-import type { User, AuthTokens } from '../../../src/frontend/src/types';
+import type { User } from '../../../src/frontend/src/types';
 
 describe('authStore', () => {
   const mockUser: User = {
-    id: 1,
+    id: '1',
     email: 'test@test.com',
     firstName: 'Test',
     lastName: 'User',
-    role: 'EDITOR',
+    role: 'Maintainer',
+    isActive: true,
+    lastLogin: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  };
-
-  const mockTokens: AuthTokens = {
-    accessToken: 'access-token-123',
-    refreshToken: 'refresh-token-456',
   };
 
   beforeEach(() => {
@@ -25,9 +22,8 @@ describe('authStore', () => {
 
   it('should initialize with null user and unauthenticated state', () => {
     const { result } = renderHook(() => useAuthStore());
-    
+
     expect(result.current.user).toBeNull();
-    expect(result.current.tokens).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
@@ -37,22 +33,19 @@ describe('authStore', () => {
     const { result } = renderHook(() => useAuthStore());
 
     act(() => {
-      result.current.login(mockUser, mockTokens);
+      result.current.login(mockUser);
     });
 
     expect(result.current.user).toEqual(mockUser);
-    expect(result.current.tokens).toEqual(mockTokens);
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.error).toBeNull();
-    expect(localStorage.getItem('accessToken')).toBe(mockTokens.accessToken);
-    expect(localStorage.getItem('refreshToken')).toBe(mockTokens.refreshToken);
   });
 
   it('should logout user and clear state', () => {
     const { result } = renderHook(() => useAuthStore());
 
     act(() => {
-      result.current.login(mockUser, mockTokens);
+      result.current.login(mockUser);
     });
 
     act(() => {
@@ -60,10 +53,7 @@ describe('authStore', () => {
     });
 
     expect(result.current.user).toBeNull();
-    expect(result.current.tokens).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(localStorage.getItem('accessToken')).toBeNull();
-    expect(localStorage.getItem('refreshToken')).toBeNull();
   });
 
   it('should set and clear error', () => {
@@ -102,13 +92,13 @@ describe('authStore', () => {
     const { result } = renderHook(() => useAuthStore());
 
     act(() => {
-      result.current.login(mockUser, mockTokens);
+      result.current.login(mockUser);
     });
 
     // Check that state is persisted
     const persistedState = localStorage.getItem('auth-storage');
     expect(persistedState).toBeTruthy();
-    
+
     const parsed = JSON.parse(persistedState!);
     expect(parsed.state.user).toEqual(mockUser);
     expect(parsed.state.isAuthenticated).toBe(true);

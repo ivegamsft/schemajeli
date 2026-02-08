@@ -1,8 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/authService';
-import type { LoginCredentials } from '../types';
 import { toast } from 'sonner';
 
 export function useAuth() {
@@ -12,35 +11,46 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     error,
-    login: loginStore,
     logout: logoutStore,
     setLoading,
     setError,
     clearError,
+    setUser,
   } = useAuthStore();
 
-  const login = useCallback(
-    async (credentials: LoginCredentials) => {
+  useEffect(() => {
+    const hydrateUser = async () => {
       try {
-        setLoading(true);
-        clearError();
-        
-        const response = await authService.login(credentials);
-        loginStore(response.user, response.tokens);
-        
-        toast.success('Login successful');
-        navigate('/dashboard');
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+        }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Login failed';
-        setError(message);
-        toast.error(message);
-        throw err;
-      } finally {
-        setLoading(false);
+        // Ignore hydration errors
       }
-    },
-    [loginStore, navigate, setLoading, setError, clearError]
-  );
+    };
+
+    if (!user) {
+      void hydrateUser();
+    }
+  }, [setUser, user]);
+
+  const login = useCallback(async () => {
+    try {
+      setLoading(true);
+      clearError();
+
+      await authService.login();
+      toast.success('Redirecting to Microsoft login');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
+      toast.error(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, clearError]);
 
   const logout = useCallback(async () => {
     try {
@@ -60,10 +70,10 @@ export function useAuth() {
   }, [logoutStore, navigate, setLoading]);
 
   const hasPermission = useCallback(
-    (requiredRole: 'ADMIN' | 'EDITOR' | 'VIEWER'): boolean => {
+    (requiredRole: 'Admin' | 'Maintainer' | 'Viewer'): boolean => {
       if (!user) return false;
       
-      const roleHierarchy = { ADMIN: 3, EDITOR: 2, VIEWER: 1 };
+      const roleHierarchy = { Admin: 3, Maintainer: 2, Viewer: 1 };
       return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
     },
     [user]

@@ -15,7 +15,7 @@ export default function AbbreviationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAbbr, setEditingAbbr] = useState<Abbreviation | undefined>();
-  const [formData, setFormData] = useState({ abbreviation: '', meaning: '' });
+  const [formData, setFormData] = useState({ abbreviation: '', sourceWord: '', definition: '' });
 
   useEffect(() => {
     loadAbbreviations();
@@ -35,7 +35,7 @@ export default function AbbreviationsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this abbreviation?')) return;
 
     try {
@@ -56,7 +56,7 @@ export default function AbbreviationsPage() {
 
   const handleOpenEdit = (abbr: Abbreviation) => {
     setEditingAbbr(abbr);
-    setFormData({ abbreviation: abbr.abbreviation, meaning: abbr.meaning });
+      setFormData({ abbreviation: abbr.abbreviation, sourceWord: abbr.sourceWord, definition: abbr.definition || '' });
     setIsFormOpen(true);
   };
 
@@ -91,7 +91,7 @@ export default function AbbreviationsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Abbreviations</h1>
           <p className="text-gray-600 mt-1">Manage database abbreviations and acronyms</p>
         </div>
-        {hasPermission('EDITOR') && (
+        {hasPermission('Maintainer') && (
           <button
             onClick={handleOpenCreate}
             className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
@@ -131,7 +131,7 @@ export default function AbbreviationsPage() {
         <div className="p-8">
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <p className="text-gray-600 mb-4">No abbreviations found</p>
-            {hasPermission('EDITOR') && (
+            {hasPermission('Maintainer') && (
               <button
                 onClick={handleOpenCreate}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
@@ -157,7 +157,7 @@ export default function AbbreviationsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
-                  {hasPermission('EDITOR') && (
+                  {hasPermission('Maintainer') && (
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -178,7 +178,7 @@ export default function AbbreviationsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(new Date(abbr.createdAt))}
                     </td>
-                    {hasPermission('EDITOR') && (
+                    {hasPermission('Maintainer') && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleOpenEdit(abbr)}
@@ -187,7 +187,7 @@ export default function AbbreviationsPage() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        {hasPermission('ADMIN') && (
+                        {hasPermission('Admin') && (
                           <button
                             onClick={() => handleDelete(abbr.id)}
                             className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded"

@@ -9,8 +9,8 @@ vi.mock('../../services/tableService', () => ({
   tableService: {
     getAll: vi.fn(async () => ({ 
       data: [
-        { id: 1, name: 'users', databaseId: 1, tableType: 'TABLE', elementCount: 5, createdAt: '2024-01-01T00:00:00Z' },
-        { id: 2, name: 'products', databaseId: 1, tableType: 'TABLE', elementCount: 3, createdAt: '2024-01-02T00:00:00Z' },
+        { id: '1', name: 'users', databaseId: '1', tableType: 'TABLE', elementCount: 5, createdAt: '2024-01-01T00:00:00Z' },
+        { id: '2', name: 'products', databaseId: '1', tableType: 'TABLE', elementCount: 3, createdAt: '2024-01-02T00:00:00Z' },
       ], 
       totalPages: 1,
     })),
@@ -21,15 +21,25 @@ vi.mock('../../services/tableService', () => ({
 
 vi.mock('../../services/databaseService', () => ({
   databaseService: {
-    getAll: vi.fn(async () => ({ data: [{ id: 1, name: 'maindb', serverId: 1 }], totalPages: 1 })),
+    getAll: vi.fn(async () => ({ data: [{ id: '1', name: 'maindb', serverId: '1' }], totalPages: 1 })),
     getById: vi.fn(),
   },
 }));
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 1, email: 'test@example.com', firstName: 'Test', role: 'EDITOR' },
-    hasPermission: (permission: string) => ['EDITOR', 'ADMIN'].includes(permission),
+    user: {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'Maintainer',
+      isActive: true,
+      lastLogin: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    hasPermission: (permission: string) => ['Maintainer', 'Admin'].includes(permission),
     logout: vi.fn(),
     login: vi.fn(),
   }),

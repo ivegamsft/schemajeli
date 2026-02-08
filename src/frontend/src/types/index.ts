@@ -1,5 +1,5 @@
 // User and Authentication Types
-export type UserRole = 'ADMIN' | 'EDITOR' | 'VIEWER';
+export type UserRole = 'Admin' | 'Maintainer' | 'Viewer';
 
 export interface User {
   id: string;
@@ -11,21 +11,6 @@ export interface User {
   lastLogin: string | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  user: User;
-  tokens: AuthTokens;
 }
 
 // Server Types
@@ -185,6 +170,19 @@ export interface ElementFormData {
   defaultValue?: string;
   description?: string;
 }
+
+// Create/Update Types
+export type CreateServerData = ServerFormData;
+export type UpdateServerData = Partial<ServerFormData>;
+
+export type CreateDatabaseData = DatabaseFormData;
+export type UpdateDatabaseData = Partial<DatabaseFormData>;
+
+export type CreateTableData = TableFormData;
+export type UpdateTableData = Partial<TableFormData>;
+
+export type CreateElementData = ElementFormData;
+export type UpdateElementData = Partial<ElementFormData>;
 
 // UI State Types
 export interface FilterState {

@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 
 const serverSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
-  hostName: z.string().min(1, 'Host name is required').max(255),
-  portNumber: z.number().min(1).max(65535),
-  rdbmsType: z.enum(['INFORMIX', 'POSTGRESQL', 'MYSQL', 'ORACLE', 'SQLSERVER', 'OTHER']),
+  host: z.string().min(1, 'Host is required').max(255),
+  port: z.number().min(1).max(65535),
+  rdbmsType: z.enum(['INFORMIX', 'POSTGRESQL', 'MYSQL', 'ORACLE', 'DB2']),
   description: z.string().max(500).optional(),
 });
 
@@ -43,15 +43,15 @@ export default function ServerFormModal({
     defaultValues: server
       ? {
           name: server.name,
-          hostName: server.hostName,
-          portNumber: server.portNumber,
+          host: server.host,
+          port: server.port,
           rdbmsType: server.rdbmsType,
           description: server.description || '',
         }
       : {
           name: '',
-          hostName: '',
-          portNumber: 5432,
+          host: '',
+          port: 5432,
           rdbmsType: 'POSTGRESQL',
           description: '',
         },
@@ -61,8 +61,8 @@ export default function ServerFormModal({
     if (isOpen && server) {
       reset({
         name: server.name,
-        hostName: server.hostName,
-        portNumber: server.portNumber,
+        host: server.host,
+        port: server.port,
         rdbmsType: server.rdbmsType,
         description: server.description || '',
       });
@@ -130,9 +130,8 @@ export default function ServerFormModal({
               <option value="POSTGRESQL">PostgreSQL</option>
               <option value="MYSQL">MySQL</option>
               <option value="ORACLE">Oracle</option>
-              <option value="SQLSERVER">SQL Server</option>
+              <option value="DB2">DB2</option>
               <option value="INFORMIX">Informix</option>
-              <option value="OTHER">Other</option>
             </select>
             {errors.rdbmsType && (
               <p className="mt-1 text-sm text-red-600">{errors.rdbmsType.message}</p>
@@ -140,34 +139,34 @@ export default function ServerFormModal({
           </div>
 
           <div>
-            <label htmlFor="hostName" className="block text-sm font-medium text-gray-700 mb-1">
-              Host Name *
+            <label htmlFor="host" className="block text-sm font-medium text-gray-700 mb-1">
+              Host *
             </label>
             <input
-              {...register('hostName')}
+              {...register('host')}
               type="text"
-              id="hostName"
+              id="host"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="localhost or db.example.com"
             />
-            {errors.hostName && (
-              <p className="mt-1 text-sm text-red-600">{errors.hostName.message}</p>
+            {errors.host && (
+              <p className="mt-1 text-sm text-red-600">{errors.host.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="portNumber" className="block text-sm font-medium text-gray-700 mb-1">
-              Port Number *
+            <label htmlFor="port" className="block text-sm font-medium text-gray-700 mb-1">
+              Port *
             </label>
             <input
-              {...register('portNumber', { valueAsNumber: true })}
+              {...register('port', { valueAsNumber: true })}
               type="number"
-              id="portNumber"
+              id="port"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="5432"
             />
-            {errors.portNumber && (
-              <p className="mt-1 text-sm text-red-600">{errors.portNumber.message}</p>
+            {errors.port && (
+              <p className="mt-1 text-sm text-red-600">{errors.port.message}</p>
             )}
           </div>
 

@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { useAuth } from '../useAuth';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
-import type { LoginResponse } from '../../types';
 
 vi.mock('../../services/authService');
 vi.mock('sonner', () => ({
@@ -29,8 +28,8 @@ describe('useAuth', () => {
   );
 
   beforeEach(() => {
-    localStorage.clear();
     vi.clearAllMocks();
+    vi.mocked(authService.getCurrentUser).mockResolvedValue(null);
   });
 
   it('should initialize with unauthenticated state', () => {
@@ -41,74 +40,31 @@ describe('useAuth', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('should login successfully', async () => {
-    const mockResponse: LoginResponse = {
-      user: {
-        id: 1,
-        email: 'test@test.com',
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'EDITOR',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      tokens: {
-        accessToken: 'access-123',
-        refreshToken: 'refresh-456',
-      },
-    };
-
-    vi.mocked(authService.login).mockResolvedValue(mockResponse);
+  it('should trigger login redirect', async () => {
+    vi.mocked(authService.login).mockResolvedValue();
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(async () => {
-      await result.current.login({ email: 'test@test.com', password: 'password' });
+      await result.current.login();
     });
 
-    expect(result.current.user).toEqual(mockResponse.user);
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+    expect(authService.login).toHaveBeenCalled();
   });
 
   it('should handle login error', async () => {
-    vi.mocked(authService.login).mockRejectedValue(new Error('Invalid credentials'));
+    vi.mocked(authService.login).mockRejectedValue(new Error('Login failed'));
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await expect(
-      result.current.login({ email: 'wrong@test.com', password: 'wrong' })
-    ).rejects.toThrow();
+    await expect(result.current.login()).rejects.toThrow();
 
-    expect(result.current.error).toBe('Invalid credentials');
+    expect(result.current.error).toBe('Login failed');
   });
 
   it('should logout successfully', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    // First login
-    const mockResponse: LoginResponse = {
-      user: {
-        id: 1,
-        email: 'test@test.com',
-        firstName: 'Test',
-        lastName: 'User',
-        role: 'EDITOR',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      tokens: {
-        accessToken: 'access-123',
-        refreshToken: 'refresh-456',
-      },
-    };
-
-    vi.mocked(authService.login).mockResolvedValue(mockResponse);
-    await waitFor(async () => {
-      await result.current.login({ email: 'test@test.com', password: 'password' });
-    });
-
-    // Then logout
     vi.mocked(authService.logout).mockResolvedValue();
     await waitFor(async () => {
       await result.current.logout();
@@ -123,25 +79,27 @@ describe('useAuth', () => {
     const { result, rerender } = renderHook(() => useAuth(), { wrapper });
 
     // No user - no permission
-    expect(result.current.hasPermission('VIEWER')).toBe(false);
+    expect(result.current.hasPermission('Viewer')).toBe(false);
 
-    // Mock user as EDITOR
+    // Mock user as Maintainer
     const mockStore = useAuthStore.getState();
     mockStore.setUser({
-      id: 1,
-      email: 'editor@test.com',
-      firstName: 'Editor',
+      id: '1',
+      email: 'maintainer@test.com',
+      firstName: 'Maintainer',
       lastName: 'User',
-      role: 'EDITOR',
+      role: 'Maintainer',
+      isActive: true,
+      lastLogin: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
 
     rerender();
 
-    // EDITOR can access VIEWER and EDITOR
-    expect(result.current.hasPermission('VIEWER')).toBe(true);
-    expect(result.current.hasPermission('EDITOR')).toBe(true);
-    expect(result.current.hasPermission('ADMIN')).toBe(false);
+    // Maintainer can access Viewer and Maintainer
+    expect(result.current.hasPermission('Viewer')).toBe(true);
+    expect(result.current.hasPermission('Maintainer')).toBe(true);
+    expect(result.current.hasPermission('Admin')).toBe(false);
   });
 });

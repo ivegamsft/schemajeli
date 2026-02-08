@@ -11,31 +11,33 @@ async function getAll(page: number, limit: number): Promise<PaginatedResponse<Ab
   return response.data;
 }
 
-async function getById(id: number): Promise<Abbreviation> {
+async function getById(id: string): Promise<Abbreviation> {
   const response = await axios.get(`/abbreviations/${id}`);
   return response.data;
 }
 
 async function create(data: {
   abbreviation: string;
-  meaning: string;
+    sourceWord?: string;
+    definition?: string;
 }): Promise<Abbreviation> {
   const response = await axios.post('/abbreviations', data);
   return response.data;
 }
 
 async function update(
-  id: number,
+  id: string,
   data: {
     abbreviation: string;
-    meaning: string;
+      sourceWord?: string;
+      definition?: string;
   }
 ): Promise<Abbreviation> {
   const response = await axios.put(`/abbreviations/${id}`, data);
   return response.data;
 }
 
-async function delete_(id: number): Promise<void> {
+async function delete_(id: string): Promise<void> {
   await axios.delete(`/abbreviations/${id}`);
 }
 

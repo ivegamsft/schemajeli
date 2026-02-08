@@ -3,13 +3,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
-import { toast } from 'sonner';
 import type { Table, CreateTableData, UpdateTableData } from '../types';
 
 const tableSchema = z.object({
   name: z.string().min(1, 'Table name is required').max(100, 'Name too long'),
-  databaseId: z.number().positive('Database is required'),
-  tableType: z.enum(['TABLE', 'VIEW', 'MATERIALIZED_VIEW']).default('TABLE'),
+  databaseId: z.string().min(1, 'Database is required'),
+  tableType: z.enum(['TABLE', 'VIEW', 'MATERIALIZED_VIEW']),
   description: z.string().optional(),
 });
 
@@ -18,7 +17,7 @@ type TableFormData = z.infer<typeof tableSchema>;
 interface TableFormModalProps {
   isOpen: boolean;
   mode: 'create' | 'edit';
-  databaseId: number;
+  databaseId: string;
   editingTable?: Table;
   onClose: () => void;
   onSubmit: (data: CreateTableData | UpdateTableData) => Promise<void>;

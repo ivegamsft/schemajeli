@@ -13,11 +13,13 @@ export const handlers = [
         status: 'success',
         data: {
           user: {
-            id: 1,
+            id: '1',
             email: 'admin@schemajeli.com',
             firstName: 'Admin',
             lastName: 'User',
-            role: 'ADMIN',
+            role: 'Admin',
+            isActive: true,
+            lastLogin: null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -73,11 +75,13 @@ export const handlers = [
     return HttpResponse.json({
       status: 'success',
       data: {
-        id: 1,
+        id: '1',
         email: 'admin@schemajeli.com',
         firstName: 'Admin',
         lastName: 'User',
-        role: 'ADMIN',
+        role: 'Admin',
+        isActive: true,
+        lastLogin: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

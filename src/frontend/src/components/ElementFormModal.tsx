@@ -3,12 +3,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
-import { toast } from 'sonner';
 import type { Element, CreateElementData, UpdateElementData } from '../types';
 
 const elementSchema = z.object({
   name: z.string().min(1, 'Column name is required').max(100, 'Name too long'),
-  tableId: z.number().positive('Table is required'),
+  tableId: z.string().min(1, 'Table is required'),
   dataType: z.string().min(1, 'Data type is required'),
   length: z.number().optional().nullable(),
   precision: z.number().optional().nullable(),
@@ -23,7 +22,7 @@ type ElementFormData = z.infer<typeof elementSchema>;
 interface ElementFormModalProps {
   isOpen: boolean;
   mode: 'create' | 'edit';
-  tableId: number;
+  tableId: string;
   editingElement?: Element;
   onClose: () => void;
   onSubmit: (data: CreateElementData | UpdateElementData) => Promise<void>;

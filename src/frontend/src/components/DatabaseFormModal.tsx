@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 const databaseSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
-  serverId: z.number().min(1, 'Server is required'),
+  serverId: z.string().min(1, 'Server is required'),
   purpose: z.string().max(100).optional(),
   description: z.string().max(500).optional(),
 });
@@ -50,7 +50,7 @@ export default function DatabaseFormModal({
         }
       : {
           name: '',
-          serverId: servers[0]?.id || 0,
+          serverId: servers[0]?.id || '',
           purpose: '',
           description: '',
         },
@@ -121,7 +121,7 @@ export default function DatabaseFormModal({
               Server *
             </label>
             <select
-              {...register('serverId', { valueAsNumber: true })}
+              {...register('serverId')}
               id="serverId"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >

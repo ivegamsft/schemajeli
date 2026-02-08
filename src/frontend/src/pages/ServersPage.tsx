@@ -37,7 +37,7 @@ export default function ServersPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete server "${name}"?`)) return;
 
     try {
@@ -78,8 +78,8 @@ export default function ServersPage() {
         id: server.id,
         name: server.name,
         rdbmsType: server.rdbmsType,
-        hostName: server.hostName,
-        portNumber: server.portNumber,
+        host: server.host,
+        port: server.port,
         location: server.location,
         description: server.description
       }));
@@ -106,7 +106,7 @@ export default function ServersPage() {
           <h1 className="text-3xl font-bold text-gray-900">Database Servers</h1>
           <p className="text-gray-600 mt-1">Manage your database server connections</p>
         </div>
-        {hasPermission('EDITOR') && (
+        {hasPermission('Maintainer') && (
           <button
             onClick={handleCreate}
             className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
@@ -126,7 +126,7 @@ export default function ServersPage() {
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
           <ServerIcon className="w-12 h-12 mx-auto text-gray-400" />
           <p className="mt-2 text-gray-600">No servers found</p>
-          {hasPermission('EDITOR') && (
+          {hasPermission('Maintainer') && (
             <button className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
               Add your first server
             </button>
@@ -153,7 +153,7 @@ export default function ServersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
-                  {hasPermission('EDITOR') && (
+                  {hasPermission('Maintainer') && (
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -180,23 +180,23 @@ export default function ServersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {server.hostName}
+                      {server.host}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {server.portNumber}
+                      {server.port}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(server.createdAt)}
                     </td>
+                    {hasPermission('Maintainer') && (
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
                           onClick={() => handleEdit(server)}
                           className="text-primary-600 hover:text-primary-900 mr-3"
-                        
-                    {hasPermission('EDITOR') && (
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-primary-600 hover:text-primary-900 mr-3">
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        {hasPermission('ADMIN') && (
+                        {hasPermission('Admin') && (
                           <button
                             onClick={() => handleDelete(server.id, server.name)}
                             className="text-red-600 hover:text-red-900"

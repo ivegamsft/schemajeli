@@ -15,7 +15,7 @@ export default function DatabasesPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedServer, setSelectedServer] = useState<number | undefined>();
+  const [selectedServer, setSelectedServer] = useState<string | undefined>();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDatabase, setEditingDatabase] = useState<Database | undefined>();
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -51,7 +51,7 @@ export default function DatabasesPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete database "${name}"?`)) return;
 
     try {
@@ -64,7 +64,7 @@ export default function DatabasesPage() {
     }
   };
 
-  const getServerName = (serverId: number) => {
+  const getServerName = (serverId: string) => {
     return servers.find((s) => s.id === serverId)?.name || 'Unknown';
   };
 
@@ -96,7 +96,7 @@ export default function DatabasesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Databases</h1>
           <p className="text-gray-600 mt-1">Manage your database schemas and metadata</p>
         </div>
-        {hasPermission('EDITOR') && (
+        {hasPermission('Maintainer') && (
           <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
             <Plus className="w-5 h-5" />
             Add Database
@@ -110,7 +110,7 @@ export default function DatabasesPage() {
         <select
           value={selectedServer || ''}
           onChange={(e) => {
-            setSelectedServer(e.target.value ? Number(e.target.value) : undefined);
+            setSelectedServer(e.target.value ? String(e.target.value) : undefined);
             setPage(1);
           }}
           className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -135,7 +135,7 @@ export default function DatabasesPage() {
           <p className="mt-2 text-gray-600">
             {selectedServer ? 'No databases found for this server' : 'No databases found'}
           </p>
-          {hasPermission('EDITOR') && (
+          {hasPermission('Maintainer') && (
             <button className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
               Add your first database
             </button>
@@ -162,7 +162,7 @@ export default function DatabasesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
-                  {hasPermission('EDITOR') && (
+                  {hasPermission('Maintainer') && (
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -202,7 +202,7 @@ export default function DatabasesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(database.createdAt)}
                     </td>
-                    {hasPermission('EDITOR') && (
+                    {hasPermission('Maintainer') && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button 
                           onClick={() => handleEdit(database)}
@@ -210,7 +210,7 @@ export default function DatabasesPage() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        {hasPermission('ADMIN') && (
+                        {hasPermission('Admin') && (
                           <button
                             onClick={() => handleDelete(database.id, database.name)}
                             className="text-red-600 hover:text-red-900"

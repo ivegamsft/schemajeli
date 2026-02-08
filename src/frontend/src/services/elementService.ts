@@ -5,7 +5,7 @@ export const elementService = {
   /**
    * Get all elements with pagination
    */
-  async getAll(page = 1, limit = 10, tableId?: number): Promise<PaginatedResponse<Element>> {
+  async getAll(page = 1, limit = 10, tableId?: string): Promise<PaginatedResponse<Element>> {
     const params: Record<string, any> = { page, limit };
     if (tableId) params.tableId = tableId;
 
@@ -19,7 +19,7 @@ export const elementService = {
   /**
    * Get a single element by ID
    */
-  async getById(id: number): Promise<Element> {
+  async getById(id: string): Promise<Element> {
     const response = await apiClient.get<{ status: string; data: Element }>(
       `/elements/${id}`
     );
@@ -29,7 +29,7 @@ export const elementService = {
   /**
    * Get elements for a specific table
    */
-  async getByTableId(tableId: number): Promise<Element[]> {
+  async getByTableId(tableId: string): Promise<Element[]> {
     const response = await apiClient.get<{ status: string; data: Element[] }>(
       `/tables/${tableId}/elements`
     );
@@ -50,7 +50,7 @@ export const elementService = {
   /**
    * Update an existing element
    */
-  async update(id: number, data: UpdateElementData): Promise<Element> {
+  async update(id: string, data: UpdateElementData): Promise<Element> {
     const response = await apiClient.put<{ status: string; data: Element }>(
       `/elements/${id}`,
       data
@@ -61,14 +61,14 @@ export const elementService = {
   /**
    * Delete an element
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await apiClient.delete(`/elements/${id}`);
   },
 
   /**
    * Reorder elements within a table
    */
-  async reorder(tableId: number, elementIds: number[]): Promise<void> {
+  async reorder(tableId: string, elementIds: string[]): Promise<void> {
     await apiClient.post(`/tables/${tableId}/elements/reorder`, { elementIds });
   },
 };

@@ -51,6 +51,7 @@ playwright/.cache/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/snippets/
 .idea/
 *.swp
 *.swo
@@ -166,6 +167,33 @@ local/
 *.cert
 secrets/
 .secrets/
+*.jks
+*.p12
+*.pfx
+*.p8
+*.crt
+.pem
+.key
+*.der
+*.pub
+
+# API Keys and Tokens
+*.token
+*.pat
+
+# Azure Specific
+.azure/config
+*.azureauth
+.azcopy/
+azure.json
+
+# Database connection strings/files
+.pgpass
+.mysql_history
+.netrc
+
+# SSH Keys
+.ssh/
 
 # Legacy application folder (contains old credentials and ASP code)
 # Can be pulled in separately for reference if needed

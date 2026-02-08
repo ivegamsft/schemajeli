@@ -9,13 +9,13 @@ vi.mock('../../services/abbreviationService', () => ({
   abbreviationService: {
     getAll: vi.fn(async () => ({
       data: [
-        { id: 1, abbreviation: 'PK', meaning: 'Primary Key', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: 2, abbreviation: 'FK', meaning: 'Foreign Key', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+        { id: '1', abbreviation: 'PK', meaning: 'Primary Key', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+        { id: '2', abbreviation: 'FK', meaning: 'Foreign Key', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
       ],
       totalPages: 1,
     })),
     getById: vi.fn(),
-    create: vi.fn(async (data) => ({ id: 3, ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })),
+    create: vi.fn(async (data) => ({ id: '3', ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })),
     update: vi.fn(async (id, data) => ({ id, ...data, createdAt: '2024-01-01T00:00:00Z', updatedAt: new Date().toISOString() })),
     delete: vi.fn(async () => undefined),
   },
@@ -23,8 +23,18 @@ vi.mock('../../services/abbreviationService', () => ({
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 1, email: 'test@example.com', firstName: 'Test', role: 'EDITOR' },
-    hasPermission: (permission: string) => ['EDITOR', 'ADMIN'].includes(permission),
+    user: {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'Maintainer',
+      isActive: true,
+      lastLogin: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    hasPermission: (permission: string) => ['Maintainer', 'Admin'].includes(permission),
     logout: vi.fn(),
     login: vi.fn(),
   }),

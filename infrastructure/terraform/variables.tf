@@ -191,6 +191,24 @@ variable "storage_account_replication" {
   }
 }
 
+# App Configuration
+variable "app_configuration_sku" {
+  description = "App Configuration SKU (free or standard)"
+  type        = string
+  default     = "standard"
+
+  validation {
+    condition     = contains(["free", "standard"], var.app_configuration_sku)
+    error_message = "App Configuration SKU must be free or standard."
+  }
+}
+
+variable "app_configuration_purge_protection" {
+  description = "Enable purge protection for App Configuration"
+  type        = bool
+  default     = false
+}
+
 # Static Web App Configuration
 variable "static_app_sku_tier" {
   description = "Static Web App SKU tier (Free or Standard)"

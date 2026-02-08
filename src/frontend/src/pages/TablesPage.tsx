@@ -17,7 +17,7 @@ export default function TablesPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedDatabase, setSelectedDatabase] = useState<number | undefined>();
+  const [selectedDatabase, setSelectedDatabase] = useState<string | undefined>();
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | undefined>();
   const [tableModalMode, setTableModalMode] = useState<'create' | 'edit'>('create');
@@ -53,7 +53,7 @@ export default function TablesPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete table "${name}"?`)) return;
 
     try {
@@ -95,11 +95,11 @@ export default function TablesPage() {
     }
   };
 
-  const handleViewDetails = async (tableId: number) => {
+  const handleViewDetails = async (tableId: string) => {
     navigate(`/tables/${tableId}`);
   };
 
-  const getDatabaseName = (databaseId: number) => {
+  const getDatabaseName = (databaseId: string) => {
     return databases.find((d) => d.id === databaseId)?.name || 'Unknown';
   };
 
@@ -123,7 +123,7 @@ export default function TablesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Tables</h1>
           <p className="text-gray-600 mt-1">Manage database tables and views</p>
         </div>
-        {hasPermission('EDITOR') && (
+        {hasPermission('Maintainer') && (
           <button
             onClick={handleCreateTable}
             className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
@@ -140,7 +140,7 @@ export default function TablesPage() {
         <select
           value={selectedDatabase || ''}
           onChange={(e) => {
-            setSelectedDatabase(e.target.value ? Number(e.target.value) : undefined);
+            setSelectedDatabase(e.target.value ? String(e.target.value) : undefined);
             setPage(1);
           }}
           className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -165,7 +165,7 @@ export default function TablesPage() {
           <p className="mt-2 text-gray-600">
             {selectedDatabase ? 'No tables found for this database' : 'No tables found'}
           </p>
-          {hasPermission('EDITOR') && (
+          {hasPermission('Maintainer') && (
             <button className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
               Add your first table
             </button>
@@ -236,7 +236,7 @@ export default function TablesPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {hasPermission('EDITOR') && (
+                      {hasPermission('Maintainer') && (
                         <>
                           <button
                             onClick={() => handleEditTable(table)}
@@ -245,7 +245,7 @@ export default function TablesPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          {hasPermission('ADMIN') && (
+                          {hasPermission('Admin') && (
                             <button
                               onClick={() => handleDelete(table.id, table.name)}
                               className="text-red-600 hover:text-red-900"

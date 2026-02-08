@@ -1,125 +1,38 @@
 import express from 'express';
 import cors from 'cors';
+import 'dotenv/config';
+import { prisma } from './db/prisma.js';
+import { authenticateJWT, requireRole } from './middleware/auth.js';
+import { getGraphMe } from './services/oboClient.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-type PaginationResult<T> = {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
-
-const nowIso = () => new Date().toISOString();
-
-const servers = [
-  {
-    id: '1',
-    name: 'Primary PostgreSQL',
-    host: 'postgres.local',
-    port: 5432,
-    rdbmsType: 'POSTGRESQL',
-    description: 'Primary application database server',
-    purpose: 'Production data',
-    location: 'West Europe',
-    adminContact: 'admin@schemajeli.com',
-    isActive: true,
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-    deletedAt: null,
-  },
-];
-
-const databases = [
-  {
-    id: '1',
-    serverId: '1',
-    name: 'schemajeli_dev',
-    description: 'Development database',
-    purpose: 'Dev/test data',
-    isActive: true,
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-    deletedAt: null,
-  },
-];
-
-const tables = [
-  {
-    id: '1',
-    databaseId: '1',
-    name: 'users',
-    tableType: 'TABLE',
-    description: 'Application users',
-    rowCount: 3,
-    isActive: true,
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-    deletedAt: null,
-  },
-];
-
-const elements = [
-  {
-    id: '1',
-    tableId: '1',
-    name: 'email',
-    dataType: 'varchar',
-    length: 255,
-    precision: null,
-    scale: null,
-    position: 1,
-    isPrimaryKey: false,
-    isForeignKey: false,
-    isNullable: false,
-    defaultValue: null,
-    description: 'User email address',
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-    deletedAt: null,
-  },
-];
-
-const abbreviations = [
-  {
-    id: '1',
-    abbreviation: 'DB',
-    sourceWord: 'Database',
-    primeClass: 'GENERAL',
-    category: 'Data',
-    definition: 'A structured collection of data',
-    isPrimeClass: true,
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-  },
-];
-
-const paginate = <T>(items: T[], page: number, limit: number): PaginationResult<T> => {
-  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
-  const start = (safePage - 1) * safeLimit;
-  const data = items.slice(start, start + safeLimit);
-  return {
-    data,
-    total: items.length,
-    page: safePage,
-    limit: safeLimit,
-    totalPages: Math.max(1, Math.ceil(items.length / safeLimit)),
-  };
-};
-
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-// Health check endpoint
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check endpoint with database connectivity test
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+    });
+  }
 });
 
 // API Routes
@@ -127,373 +40,792 @@ app.get('/api/v1', (_req, res) => {
   res.json({ message: 'SchemaJeli API v1', version: '1.0.0' });
 });
 
-// Statistics Routes
-app.get('/api/v1/statistics/dashboard', (_req, res) => {
-  return res.json({
-    status: 'success',
-    data: {
-      totalServers: servers.length,
-      totalDatabases: databases.length,
-      totalTables: tables.length,
-      totalElements: elements.length,
-      serversByType: {
-        POSTGRESQL: servers.filter((s) => s.rdbmsType === 'POSTGRESQL').length,
-      },
-    },
-  });
-});
-
-// Servers Routes
-app.get('/api/v1/servers', (req, res) => {
-  const page = Number(req.query.page || 1);
-  const limit = Number(req.query.limit || 10);
-  return res.json({ status: 'success', data: paginate(servers, page, limit) });
-});
-
-app.get('/api/v1/servers/:id', (req, res) => {
-  const server = servers.find((s) => s.id === req.params.id);
-  if (!server) {
-    return res.status(404).json({ status: 'error', message: 'Server not found' });
-  }
-  return res.json({ status: 'success', data: server });
-});
-
-app.post('/api/v1/servers', (req, res) => {
-  const now = nowIso();
-  const newServer = {
-    id: String(servers.length + 1),
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    deletedAt: null,
-    ...req.body,
-  };
-  servers.push(newServer);
-  return res.status(201).json({ status: 'success', data: newServer });
-});
-
-app.put('/api/v1/servers/:id', (req, res) => {
-  const index = servers.findIndex((s) => s.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Server not found' });
-  }
-  const updated = { ...servers[index], ...req.body, updatedAt: nowIso() };
-  servers[index] = updated;
-  return res.json({ status: 'success', data: updated });
-});
-
-app.delete('/api/v1/servers/:id', (req, res) => {
-  const index = servers.findIndex((s) => s.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Server not found' });
-  }
-  servers.splice(index, 1);
-  return res.status(204).send();
-});
-
-// Databases Routes
-app.get('/api/v1/databases', (req, res) => {
-  const page = Number(req.query.page || 1);
-  const limit = Number(req.query.limit || 10);
-  const serverId = req.query.serverId ? String(req.query.serverId) : undefined;
-  const filtered = serverId ? databases.filter((d) => d.serverId === serverId) : databases;
-  return res.json({ status: 'success', data: paginate(filtered, page, limit) });
-});
-
-app.get('/api/v1/databases/:id', (req, res) => {
-  const database = databases.find((d) => d.id === req.params.id);
-  if (!database) {
-    return res.status(404).json({ status: 'error', message: 'Database not found' });
-  }
-  return res.json({ status: 'success', data: database });
-});
-
-app.get('/api/v1/servers/:id/databases', (req, res) => {
-  const serverDatabases = databases.filter((d) => d.serverId === req.params.id);
-  return res.json({ status: 'success', data: serverDatabases });
-});
-
-app.post('/api/v1/databases', (req, res) => {
-  const now = nowIso();
-  const newDatabase = {
-    id: String(databases.length + 1),
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    deletedAt: null,
-    ...req.body,
-  };
-  databases.push(newDatabase);
-  return res.status(201).json({ status: 'success', data: newDatabase });
-});
-
-app.put('/api/v1/databases/:id', (req, res) => {
-  const index = databases.findIndex((d) => d.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Database not found' });
-  }
-  const updated = { ...databases[index], ...req.body, updatedAt: nowIso() };
-  databases[index] = updated;
-  return res.json({ status: 'success', data: updated });
-});
-
-app.delete('/api/v1/databases/:id', (req, res) => {
-  const index = databases.findIndex((d) => d.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Database not found' });
-  }
-  databases.splice(index, 1);
-  return res.status(204).send();
-});
-
-// Tables Routes
-app.get('/api/v1/tables', (req, res) => {
-  const page = Number(req.query.page || 1);
-  const limit = Number(req.query.limit || 10);
-  const databaseId = req.query.databaseId ? String(req.query.databaseId) : undefined;
-  const filtered = databaseId ? tables.filter((t) => t.databaseId === databaseId) : tables;
-  return res.json({ status: 'success', data: paginate(filtered, page, limit) });
-});
-
-app.get('/api/v1/tables/:id', (req, res) => {
-  const table = tables.find((t) => t.id === req.params.id);
-  if (!table) {
-    return res.status(404).json({ status: 'error', message: 'Table not found' });
-  }
-  return res.json({ status: 'success', data: table });
-});
-
-app.get('/api/v1/databases/:id/tables', (req, res) => {
-  const databaseTables = tables.filter((t) => t.databaseId === req.params.id);
-  return res.json({ status: 'success', data: databaseTables });
-});
-
-app.post('/api/v1/tables', (req, res) => {
-  const now = nowIso();
-  const newTable = {
-    id: String(tables.length + 1),
-    isActive: true,
-    createdAt: now,
-    updatedAt: now,
-    deletedAt: null,
-    ...req.body,
-  };
-  tables.push(newTable);
-  return res.status(201).json({ status: 'success', data: newTable });
-});
-
-app.put('/api/v1/tables/:id', (req, res) => {
-  const index = tables.findIndex((t) => t.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Table not found' });
-  }
-  const updated = { ...tables[index], ...req.body, updatedAt: nowIso() };
-  tables[index] = updated;
-  return res.json({ status: 'success', data: updated });
-});
-
-app.delete('/api/v1/tables/:id', (req, res) => {
-  const index = tables.findIndex((t) => t.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ status: 'error', message: 'Table not found' });
-  }
-  tables.splice(index, 1);
-  return res.status(204).send();
-});
-
-// Search Routes
-app.get('/api/v1/search', (req, res) => {
-  const q = String(req.query.q || '').toLowerCase();
-  const matchedTables = tables.filter((t) => t.name.toLowerCase().includes(q));
-  const matchedElements = elements.filter((e) => e.name.toLowerCase().includes(q));
-  const matchedAbbreviations = abbreviations.filter((a) =>
-    a.abbreviation.toLowerCase().includes(q)
-  );
-  return res.json({
-    status: 'success',
-    data: {
-      elements: matchedElements,
-      tables: matchedTables,
-      abbreviations: matchedAbbreviations,
-      totalResults: matchedElements.length + matchedTables.length + matchedAbbreviations.length,
-    },
-  });
-});
-
-app.get('/api/v1/elements/search', (req, res) => {
-  const q = String(req.query.q || '').toLowerCase();
-  const matched = elements.filter((e) => e.name.toLowerCase().includes(q));
-  return res.json({ status: 'success', data: matched });
-});
-
-app.get('/api/v1/tables/search', (req, res) => {
-  const q = String(req.query.q || '').toLowerCase();
-  const matched = tables.filter((t) => t.name.toLowerCase().includes(q));
-  return res.json({ status: 'success', data: matched });
-});
-
-app.get('/api/v1/abbreviations/search', (req, res) => {
-  const q = String(req.query.q || '').toLowerCase();
-  const matched = abbreviations.filter((a) =>
-    a.abbreviation.toLowerCase().includes(q)
-  );
-  return res.json({ status: 'success', data: matched });
-});
-
-// Abbreviations Routes (raw responses expected by frontend)
-app.get('/api/v1/abbreviations', (req, res) => {
-  const page = Number(req.query.page || 1);
-  const limit = Number(req.query.limit || 10);
-  const paged = paginate(abbreviations, page, limit);
-  return res.json({ data: paged.data, totalPages: paged.totalPages });
-});
-
-app.get('/api/v1/abbreviations/:id', (req, res) => {
-  const abbreviation = abbreviations.find((a) => a.id === req.params.id);
-  if (!abbreviation) {
-    return res.status(404).json({ message: 'Abbreviation not found' });
-  }
-  return res.json(abbreviation);
-});
-
-app.post('/api/v1/abbreviations', (req, res) => {
-  const now = nowIso();
-  const newAbbreviation = {
-    id: String(abbreviations.length + 1),
-    sourceWord: req.body?.meaning || req.body?.sourceWord || 'N/A',
-    primeClass: req.body?.primeClass || 'GENERAL',
-    category: req.body?.category || 'General',
-    definition: req.body?.meaning || req.body?.definition || '',
-    isPrimeClass: false,
-    createdAt: now,
-    updatedAt: now,
-    ...req.body,
-  };
-  abbreviations.push(newAbbreviation);
-  return res.status(201).json(newAbbreviation);
-});
-
-app.put('/api/v1/abbreviations/:id', (req, res) => {
-  const index = abbreviations.findIndex((a) => a.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Abbreviation not found' });
-  }
-  const updated = { ...abbreviations[index], ...req.body, updatedAt: nowIso() };
-  abbreviations[index] = updated;
-  return res.json(updated);
-});
-
-app.delete('/api/v1/abbreviations/:id', (req, res) => {
-  const index = abbreviations.findIndex((a) => a.id === req.params.id);
-  if (index === -1) {
-    return res.status(404).json({ message: 'Abbreviation not found' });
-  }
-  abbreviations.splice(index, 1);
-  return res.status(204).send();
-});
-
 // Auth Routes
-app.post('/api/v1/auth/login', (req, res) => {
-  const { email, password } = req.body as { email?: string; password?: string };
+app.post('/api/v1/auth/login', (_req, res) => {
+  // Authentication is handled by Azure Entra ID
+  res.json({
+    status: 'success',
+    message: 'Use Azure Entra ID for authentication',
+    authUrl: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/authorize`,
+  });
+});
 
-  // Basic validation
-  if (!email || !password) {
-    return res.status(400).json({ status: 'error', message: 'Email and password are required' });
-  }
+app.get('/api/v1/auth/verify', authenticateJWT, (req, res) => {
+  res.json({
+    status: 'success',
+    data: {
+      user: req.user,
+    },
+  });
+});
 
-  // Mock authentication - in production, verify against database
-  if (email === 'admin@schemajeli.com' && password === 'Admin@123') {
-    const now = new Date().toISOString();
-    const accessToken = `mock-jwt-token-${Date.now()}`;
-    const refreshToken = `mock-refresh-token-${Date.now()}`;
-    return res.json({
-      status: 'success',
-      data: {
-        user: {
-          id: '1',
-          email,
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'ADMIN',
-          isActive: true,
-          lastLogin: now,
-          createdAt: now,
-          updatedAt: now,
-        },
-        tokens: {
-          accessToken,
-          refreshToken,
-        },
-      },
+app.get('/api/v1/auth/me', authenticateJWT, (req, res) => {
+  res.json({
+    status: 'success',
+    data: { user: req.user },
+  });
+});
+
+// OBO demo route (Microsoft Graph /me)
+app.get('/api/v1/obo/me', authenticateJWT, async (req, res) => {
+  try {
+    if (!req.user?.token) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'No user token available for OBO',
+      });
+    }
+
+    const profile = await getGraphMe(req.user.token);
+    return res.json({ status: 'success', data: profile });
+  } catch (error) {
+    console.error('OBO error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to execute OBO request',
     });
   }
-
-  return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
 });
 
 app.post('/api/v1/auth/logout', (_req, res) => {
-  return res.json({ status: 'success', data: { message: 'Logged out successfully' } });
+  res.json({ status: 'success', message: 'Logged out' });
 });
 
-app.get('/api/v1/auth/verify', (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ status: 'error', message: 'No token provided' });
+app.post('/api/v1/auth/refresh', (_req, res) => {
+  res.json({ status: 'success', message: 'Token refresh handled by MSAL' });
+});
+
+// Statistics Routes
+app.get('/api/v1/statistics/dashboard', authenticateJWT, async (_req, res) => {
+  try {
+    const [serverCount, databaseCount, tableCount, elementCount] = await Promise.all([
+      prisma.server.count({ where: { deletedAt: null } }),
+      prisma.database.count({ where: { deletedAt: null } }),
+      prisma.table.count({ where: { deletedAt: null } }),
+      prisma.element.count({ where: { deletedAt: null } }),
+    ]);
+
+    const serversByType = await prisma.server.groupBy({
+      by: ['rdbmsType'],
+      where: { deletedAt: null },
+      _count: true,
+    });
+
+    const stats = {
+      totalServers: serverCount,
+      totalDatabases: databaseCount,
+      totalTables: tableCount,
+      totalElements: elementCount,
+      serversByType: Object.fromEntries(serversByType.map((s) => [s.rdbmsType, s._count])),
+    };
+
+    return res.json({
+      status: 'success',
+      data: stats,
+    });
+  } catch (error) {
+    console.error('Statistics error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch statistics',
+    });
   }
-
-  // Mock verification
-  return res.json({
-    status: 'success',
-    data: {
-      valid: true,
-      user: { email: 'admin@schemajeli.com' },
-    },
-  });
 });
 
-app.post('/api/v1/auth/refresh', (req, res) => {
-  const { refreshToken } = req.body as { refreshToken?: string };
-  if (!refreshToken) {
-    return res.status(400).json({ status: 'error', message: 'Refresh token required' });
+// Servers Routes
+app.get('/api/v1/servers', authenticateJWT, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [servers, total] = await Promise.all([
+      prisma.server.findMany({
+        skip,
+        take: limit,
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.server.count({ where: { deletedAt: null } }),
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: servers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Servers fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch servers',
+    });
   }
-
-  const accessToken = `mock-jwt-token-${Date.now()}`;
-  return res.json({ status: 'success', data: { accessToken } });
 });
 
-app.get('/api/v1/auth/me', (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ status: 'error', message: 'No token provided' });
+app.get('/api/v1/servers/:id', authenticateJWT, async (req, res) => {
+  try {
+    const server = await prisma.server.findUnique({
+      where: { id: req.params.id },
+      include: {
+        databases: { where: { deletedAt: null } },
+      },
+    });
+
+    if (!server || server.deletedAt) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Server not found',
+      });
+    }
+
+    return res.json({ status: 'success', data: server });
+  } catch (error) {
+    console.error('Server fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch server',
+    });
   }
-
-  const now = new Date().toISOString();
-  return res.json({
-    status: 'success',
-    data: {
-      id: '1',
-      email: 'admin@schemajeli.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'ADMIN',
-      isActive: true,
-      lastLogin: now,
-      createdAt: now,
-      updatedAt: now,
-    },
-  });
 });
 
-// Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal Server Error' });
+app.post('/api/v1/servers', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const server = await prisma.server.create({
+      data: req.body,
+    });
+
+    return res.status(201).json({ status: 'success', data: server });
+  } catch (error) {
+    console.error('Server create error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to create server',
+    });
+  }
 });
 
-// Start server
+app.put('/api/v1/servers/:id', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const server = await prisma.server.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+
+    return res.json({ status: 'success', data: server });
+  } catch (error) {
+    console.error('Server update error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update server',
+    });
+  }
+});
+
+app.delete('/api/v1/servers/:id', authenticateJWT, requireRole('Admin'), async (req, res) => {
+  try {
+    await prisma.server.update({
+      where: { id: req.params.id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.json({ status: 'success', message: 'Server deleted' });
+  } catch (error) {
+    console.error('Server delete error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete server',
+    });
+  }
+});
+
+// Databases Routes
+app.get('/api/v1/databases', authenticateJWT, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const serverId = req.query.serverId ? String(req.query.serverId) : undefined;
+
+    const where = {
+      deletedAt: null,
+      ...(serverId ? { serverId } : {}),
+    };
+
+    const [databases, total] = await Promise.all([
+      prisma.database.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: { select: { tables: true } },
+        },
+      }),
+      prisma.database.count({ where }),
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: databases,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Databases fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch databases',
+    });
+  }
+});
+
+app.get('/api/v1/databases/:id', authenticateJWT, async (req, res) => {
+  try {
+    const database = await prisma.database.findUnique({
+      where: { id: req.params.id },
+      include: {
+        tables: { where: { deletedAt: null } },
+      },
+    });
+
+    if (!database || database.deletedAt) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Database not found',
+      });
+    }
+
+    return res.json({ status: 'success', data: database });
+  } catch (error) {
+    console.error('Database fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch database',
+    });
+  }
+});
+
+app.get('/api/v1/servers/:id/databases', authenticateJWT, async (req, res) => {
+  try {
+    const databases = await prisma.database.findMany({
+      where: { serverId: req.params.id, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json({ status: 'success', data: databases });
+  } catch (error) {
+    console.error('Server databases fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch server databases',
+    });
+  }
+});
+
+app.post('/api/v1/databases', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const database = await prisma.database.create({
+      data: req.body,
+    });
+
+    return res.status(201).json({ status: 'success', data: database });
+  } catch (error) {
+    console.error('Database create error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to create database',
+    });
+  }
+});
+
+app.put('/api/v1/databases/:id', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const database = await prisma.database.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+
+    return res.json({ status: 'success', data: database });
+  } catch (error) {
+    console.error('Database update error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update database',
+    });
+  }
+});
+
+app.delete('/api/v1/databases/:id', authenticateJWT, requireRole('Admin'), async (req, res) => {
+  try {
+    await prisma.database.update({
+      where: { id: req.params.id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.json({ status: 'success', message: 'Database deleted' });
+  } catch (error) {
+    console.error('Database delete error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete database',
+    });
+  }
+});
+
+// Tables Routes
+app.get('/api/v1/tables', authenticateJWT, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const databaseId = req.query.databaseId ? String(req.query.databaseId) : undefined;
+
+    const where = {
+      deletedAt: null,
+      ...(databaseId ? { databaseId } : {}),
+    };
+
+    const [tables, total] = await Promise.all([
+      prisma.table.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: { select: { elements: true } },
+        },
+      }),
+      prisma.table.count({ where }),
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: tables,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Tables fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch tables',
+    });
+  }
+});
+
+app.get('/api/v1/tables/:id', authenticateJWT, async (req, res) => {
+  try {
+    const table = await prisma.table.findUnique({
+      where: { id: req.params.id },
+      include: {
+        elements: { where: { deletedAt: null } },
+      },
+    });
+
+    if (!table || table.deletedAt) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Table not found',
+      });
+    }
+
+    return res.json({ status: 'success', data: table });
+  } catch (error) {
+    console.error('Table fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch table',
+    });
+  }
+});
+
+app.get('/api/v1/databases/:id/tables', authenticateJWT, async (req, res) => {
+  try {
+    const tables = await prisma.table.findMany({
+      where: { databaseId: req.params.id, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json({ status: 'success', data: tables });
+  } catch (error) {
+    console.error('Database tables fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch database tables',
+    });
+  }
+});
+
+app.post('/api/v1/tables', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const table = await prisma.table.create({
+      data: req.body,
+    });
+
+    return res.status(201).json({ status: 'success', data: table });
+  } catch (error) {
+    console.error('Table create error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to create table',
+    });
+  }
+});
+
+app.put('/api/v1/tables/:id', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const table = await prisma.table.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+
+    return res.json({ status: 'success', data: table });
+  } catch (error) {
+    console.error('Table update error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update table',
+    });
+  }
+});
+
+app.delete('/api/v1/tables/:id', authenticateJWT, requireRole('Admin'), async (req, res) => {
+  try {
+    await prisma.table.update({
+      where: { id: req.params.id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.json({ status: 'success', message: 'Table deleted' });
+  } catch (error) {
+    console.error('Table delete error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete table',
+    });
+  }
+});
+
+// Elements Routes
+app.get('/api/v1/elements', authenticateJWT, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const tableId = req.query.tableId ? String(req.query.tableId) : undefined;
+
+    const where = {
+      deletedAt: null,
+      ...(tableId ? { tableId } : {}),
+    };
+
+    const [elements, total] = await Promise.all([
+      prisma.element.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { position: 'asc' },
+      }),
+      prisma.element.count({ where }),
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: elements,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Elements fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch elements',
+    });
+  }
+});
+
+app.get('/api/v1/elements/:id', authenticateJWT, async (req, res) => {
+  try {
+    const element = await prisma.element.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!element || element.deletedAt) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Element not found',
+      });
+    }
+
+    return res.json({ status: 'success', data: element });
+  } catch (error) {
+    console.error('Element fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch element',
+    });
+  }
+});
+
+app.get('/api/v1/tables/:id/elements', authenticateJWT, async (req, res) => {
+  try {
+    const elements = await prisma.element.findMany({
+      where: { tableId: req.params.id, deletedAt: null },
+      orderBy: { position: 'asc' },
+    });
+
+    return res.json({ status: 'success', data: elements });
+  } catch (error) {
+    console.error('Table elements fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch table elements',
+    });
+  }
+});
+
+app.post('/api/v1/elements', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const element = await prisma.element.create({
+      data: req.body,
+    });
+
+    return res.status(201).json({ status: 'success', data: element });
+  } catch (error) {
+    console.error('Element create error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to create element',
+    });
+  }
+});
+
+app.put('/api/v1/elements/:id', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const element = await prisma.element.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+
+    return res.json({ status: 'success', data: element });
+  } catch (error) {
+    console.error('Element update error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update element',
+    });
+  }
+});
+
+app.delete('/api/v1/elements/:id', authenticateJWT, requireRole('Admin'), async (req, res) => {
+  try {
+    await prisma.element.update({
+      where: { id: req.params.id },
+      data: { deletedAt: new Date() },
+    });
+
+    return res.json({ status: 'success', message: 'Element deleted' });
+  } catch (error) {
+    console.error('Element delete error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete element',
+    });
+  }
+});
+
+// Abbreviations Routes
+app.get('/api/v1/abbreviations', authenticateJWT, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [abbreviations, total] = await Promise.all([
+      prisma.abbreviation.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.abbreviation.count(),
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: abbreviations,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Abbreviations fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch abbreviations',
+    });
+  }
+});
+
+app.get('/api/v1/abbreviations/:id', authenticateJWT, async (req, res) => {
+  try {
+    const abbreviation = await prisma.abbreviation.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!abbreviation) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Abbreviation not found',
+      });
+    }
+
+    return res.json({ status: 'success', data: abbreviation });
+  } catch (error) {
+    console.error('Abbreviation fetch error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch abbreviation',
+    });
+  }
+});
+
+app.post('/api/v1/abbreviations', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const abbreviation = await prisma.abbreviation.create({
+      data: req.body,
+    });
+
+    return res.status(201).json({ status: 'success', data: abbreviation });
+  } catch (error) {
+    console.error('Abbreviation create error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to create abbreviation',
+    });
+  }
+});
+
+app.put('/api/v1/abbreviations/:id', authenticateJWT, requireRole('Admin', 'Maintainer'), async (req, res) => {
+  try {
+    const abbreviation = await prisma.abbreviation.update({
+      where: { id: req.params.id },
+      data: req.body,
+    });
+
+    return res.json({ status: 'success', data: abbreviation });
+  } catch (error) {
+    console.error('Abbreviation update error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to update abbreviation',
+    });
+  }
+});
+
+app.delete('/api/v1/abbreviations/:id', authenticateJWT, requireRole('Admin'), async (req, res) => {
+  try {
+    await prisma.abbreviation.delete({
+      where: { id: req.params.id },
+    });
+
+    return res.json({ status: 'success', message: 'Abbreviation deleted' });
+  } catch (error) {
+    console.error('Abbreviation delete error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete abbreviation',
+    });
+  }
+});
+
+// Search Routes
+app.get('/api/v1/search', authenticateJWT, async (req, res) => {
+  try {
+    const query = String(req.query.query || '').trim();
+
+    if (!query) {
+      return res.json({
+        status: 'success',
+        data: {
+          servers: [],
+          databases: [],
+          tables: [],
+          elements: [],
+          abbreviations: [],
+          total: 0,
+        },
+      });
+    }
+
+    const [servers, databases, tables, elements, abbreviations] = await Promise.all([
+      prisma.server.findMany({
+        where: {
+          deletedAt: null,
+          name: { contains: query, mode: 'insensitive' },
+        },
+      }),
+      prisma.database.findMany({
+        where: {
+          deletedAt: null,
+          name: { contains: query, mode: 'insensitive' },
+        },
+      }),
+      prisma.table.findMany({
+        where: {
+          deletedAt: null,
+          name: { contains: query, mode: 'insensitive' },
+        },
+      }),
+      prisma.element.findMany({
+        where: {
+          deletedAt: null,
+          name: { contains: query, mode: 'insensitive' },
+        },
+      }),
+      prisma.abbreviation.findMany({
+        where: {
+          OR: [
+            { abbreviation: { contains: query, mode: 'insensitive' } },
+              { source: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+      }),
+    ]);
+
+    const total =
+      servers.length + databases.length + tables.length + elements.length + abbreviations.length;
+
+    return res.json({
+      status: 'success',
+      data: {
+        servers,
+        databases,
+        tables,
+        elements,
+        abbreviations,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to search',
+    });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-
-export default app;

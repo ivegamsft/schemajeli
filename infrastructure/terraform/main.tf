@@ -105,6 +105,21 @@ module "key_vault" {
   tags = local.common_tags
 }
 
+# App Configuration Module
+module "app_configuration" {
+  source = "./modules/app-configuration"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  app_configuration_sku       = var.app_configuration_sku
+  purge_protection_enabled    = var.app_configuration_purge_protection
+
+  tags = local.common_tags
+}
+
 # Database Module (uses password from Key Vault)
 module "database" {
   source = "./modules/database"
@@ -156,6 +171,8 @@ module "app_service" {
   cors_allowed_origins = var.cors_allowed_origins
   additional_app_settings = merge(
     {
+      "APP_CONFIG_ENDPOINT"          = module.app_configuration.app_configuration_endpoint
+      "AZURE_APP_CONFIGURATION_ENDPOINT" = module.app_configuration.app_configuration_endpoint
       "STORAGE_CONNECTION_STRING" = "" # Will be added after storage module is created
       "STORAGE_ACCOUNT_NAME"      = "" # Will be added after storage module is created
     },
@@ -164,7 +181,16 @@ module "app_service" {
 
   tags = local.common_tags
 
-  depends_on = [module.database, module.monitoring, module.key_vault]
+  depends_on = [module.database, module.monitoring, module.key_vault, module.app_configuration]
+}
+
+# Assign App Configuration RBAC role to App Service
+resource "azurerm_role_assignment" "app_service_app_config" {
+  scope                = module.app_configuration.app_configuration_id
+  role_definition_name = "App Configuration Data Reader"
+  principal_id         = module.app_service.principal_id
+
+  depends_on = [module.app_service, module.app_configuration]
 }
 
 # Storage Module

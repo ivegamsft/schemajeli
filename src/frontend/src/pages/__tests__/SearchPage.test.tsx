@@ -9,8 +9,8 @@ vi.mock('../../services/searchService', () => ({
   searchService: {
     search: vi.fn(async (query: string, filters?: any) => ({
       data: [
-        { id: 1, type: 'TABLE', name: 'users', database: 'maindb' },
-        { id: 2, type: 'ELEMENT', name: 'user_id', table: 'users' },
+        { id: '1', type: 'TABLE', name: 'users', database: 'maindb' },
+        { id: '2', type: 'ELEMENT', name: 'user_id', table: 'users' },
       ],
       totalResults: 2,
       executionTime: 45,
@@ -20,8 +20,18 @@ vi.mock('../../services/searchService', () => ({
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 1, email: 'test@example.com', firstName: 'Test', role: 'EDITOR' },
-    hasPermission: (permission: string) => ['EDITOR', 'ADMIN'].includes(permission),
+    user: {
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'Maintainer',
+      isActive: true,
+      lastLogin: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    hasPermission: (permission: string) => ['Maintainer', 'Admin'].includes(permission),
     logout: vi.fn(),
     login: vi.fn(),
   }),

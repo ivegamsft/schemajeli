@@ -30,7 +30,6 @@ describe('ProtectedRoute', () => {
   beforeEach(() => {
     useAuthStore.setState({
       user: null,
-      tokens: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -45,18 +44,19 @@ describe('ProtectedRoute', () => {
 
   it('should render protected content when authenticated', () => {
     const mockUser: User = {
-      id: 1,
+      id: '1',
       email: 'test@test.com',
       firstName: 'Test',
       lastName: 'User',
-      role: 'EDITOR',
+      role: 'Maintainer',
+      isActive: true,
+      lastLogin: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     useAuthStore.setState({
       user: mockUser,
-      tokens: { accessToken: 'token', refreshToken: 'refresh' },
       isAuthenticated: true,
       isLoading: false,
       error: null,
@@ -68,18 +68,19 @@ describe('ProtectedRoute', () => {
 
   it('should show access denied for insufficient role', () => {
     const mockUser: User = {
-      id: 1,
+      id: '1',
       email: 'viewer@test.com',
       firstName: 'Viewer',
       lastName: 'User',
-      role: 'VIEWER',
+      role: 'Viewer',
+      isActive: true,
+      lastLogin: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     useAuthStore.setState({
       user: mockUser,
-      tokens: { accessToken: 'token', refreshToken: 'refresh' },
       isAuthenticated: true,
       isLoading: false,
       error: null,
@@ -91,7 +92,7 @@ describe('ProtectedRoute', () => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
+              <ProtectedRoute requiredRole="Admin">
                 <TestComponent />
               </ProtectedRoute>
             }
@@ -106,18 +107,19 @@ describe('ProtectedRoute', () => {
 
   it('should allow access with sufficient role', () => {
     const mockUser: User = {
-      id: 1,
+      id: '1',
       email: 'admin@test.com',
       firstName: 'Admin',
       lastName: 'User',
-      role: 'ADMIN',
+      role: 'Admin',
+      isActive: true,
+      lastLogin: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     useAuthStore.setState({
       user: mockUser,
-      tokens: { accessToken: 'token', refreshToken: 'refresh' },
       isAuthenticated: true,
       isLoading: false,
       error: null,
@@ -129,7 +131,7 @@ describe('ProtectedRoute', () => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredRole="EDITOR">
+              <ProtectedRoute requiredRole="Maintainer">
                 <TestComponent />
               </ProtectedRoute>
             }
