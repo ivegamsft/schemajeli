@@ -15,11 +15,12 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 ## Functional Requirements
 
 ### FR-1: User Authentication & Authorization
-- **REQ-1.1** Users must authenticate with username/password
-- **REQ-1.2** System shall support role-based access control (Admin, Maintainer, Viewer)
-- **REQ-1.3** User sessions shall timeout after configurable period (default: 60 minutes)
-- **REQ-1.4** Admin users can create, modify, and delete user accounts
+- **REQ-1.1** Users must authenticate via Azure Entra ID (MSAL) — no local username/password
+- **REQ-1.2** System shall support role-based access control (Admin, Maintainer, Viewer) derived from Entra ID token claims
+- **REQ-1.3** Token-based sessions managed by MSAL; access tokens expire per Entra ID policy (typically 1 hour)
+- **REQ-1.4** User account management (create, modify, disable) is handled in Azure Entra ID, not in SchemaJeli
 - **REQ-1.5** User actions shall be logged for audit trail
+- **REQ-1.6** A minimal local user record is auto-created on first login to serve as FK target for audit fields
 
 ### FR-2: Schema Object Management
 - **REQ-2.1** Users can create, read, update, and delete server definitions
@@ -27,7 +28,7 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 - **REQ-2.3** Users can create, read, update, and delete table definitions
 - **REQ-2.4** Users can create, read, update, and delete element (column) definitions
 - **REQ-2.5** System enforces parent-child relationships (Server → Database → Table → Element)
-- **REQ-2.6** Each object can be tagged with status: Production, Development, Testing, Approval
+- **REQ-2.6** Each object tracks lifecycle status: ACTIVE, INACTIVE, or ARCHIVED
 
 ### FR-3: Search & Discovery
 - **REQ-3.1** Users can search for servers by name or partial name
@@ -51,7 +52,7 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 - **REQ-5.4** Generate detail and full reports for elements
 - **REQ-5.5** Generate DDL (Data Definition Language) scripts
 - **REQ-5.6** Export reports in HTML, CSV, or PDF formats
-- **REQ-5.7** Filter reports by status (Production, Development, Testing, Approval)
+- **REQ-5.7** Filter reports by status (ACTIVE, INACTIVE, ARCHIVED)
 
 ### FR-6: Data Dictionary & Documentation
 - **REQ-6.1** System serves as enterprise data dictionary
@@ -81,12 +82,13 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 - **SCALE-2.3** API-first design for future mobile/desktop client support
 
 ### NFR-3: Security
-- **SEC-3.1** All passwords shall be hashed (bcrypt minimum)
+- **SEC-3.1** Authentication handled by Azure Entra ID — no local password storage
 - **SEC-3.2** HTTPS/TLS encryption for all data in transit
-- **SEC-3.3** SQL injection prevention through parameterized queries
+- **SEC-3.3** SQL injection prevention through parameterized queries (Prisma ORM)
 - **SEC-3.4** CSRF protection for all state-changing operations
-- **SEC-3.5** Rate limiting on authentication endpoints
+- **SEC-3.5** Rate limiting: 100 requests/minute per user
 - **SEC-3.6** Audit logging of all data modifications
+- **SEC-3.7** JWT tokens validated via Microsoft JWKS endpoint on every request
 
 ### NFR-4: Availability & Reliability
 - **REL-4.1** System shall achieve 99.5% uptime
@@ -105,7 +107,7 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 - **MAINT-6.2** Comprehensive API documentation (OpenAPI/Swagger)
 - **MAINT-6.3** Minimum 70% test coverage
 - **MAINT-6.4** All components containerized with Docker
-- **MAINT-6.5** Infrastructure as Code (Terraform/Bicep for Azure)
+- **MAINT-6.5** Infrastructure as Code (Terraform for Azure — no Bicep, no Kubernetes)
 
 ### NFR-7: Data Management
 - **DATA-7.1** Support for PostgreSQL, MySQL, SQL Server, and Informix databases
@@ -118,14 +120,14 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 
 ### Story US-1: Admin User Management
 **As an** administrator  
-**I want to** create and manage user accounts  
+**I want to** manage user access and roles via Azure Entra ID  
 **So that** I can control access to the metadata repository
 
 **Acceptance Criteria:**
-- Can create new users with assigned roles
-- Can modify user roles and permissions
-- Can disable/delete users
-- Changes are logged for audit trail
+- User accounts are managed in Azure Entra ID (not in SchemaJeli)
+- Roles (Admin, Maintainer, Viewer) are assigned via Entra ID groups or app roles
+- Role changes take effect on next token refresh
+- User activity is logged locally for audit trail
 
 ### Story US-2: Search Metadata
 **As a** developer  
@@ -146,7 +148,7 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 **Acceptance Criteria:**
 - Can create new database entries with required metadata
 - Can link databases to servers
-- Can update database status (Production, Development, etc.)
+- Can update database status (ACTIVE, INACTIVE, ARCHIVED)
 - Changes trigger audit log entries
 
 ### Story US-4: Generate Reports
@@ -206,9 +208,9 @@ SchemaJeli is a legacy web-based metadata repository system originally developed
 
 1. **Rebranding:** All references to "CompanyName" replaced with "SchemaJeli"
 2. **Architecture:** Modern 3-tier architecture (Frontend, API, Database)
-3. **Technology Stack:** Node.js/Python backend, React/Vue frontend, PostgreSQL database
+3. **Technology Stack:** Node.js/Express backend, React 19 frontend, PostgreSQL database
 4. **Testing:** Minimum 70% code coverage with unit and integration tests
 5. **Documentation:** Complete API docs, user guide, and deployment guide
 6. **Performance:** All operations meet response time targets
 7. **Security:** Passes OWASP Top 10 security review
-8. **Cloud Ready:** Deployable to Azure, AWS, or on-premises Kubernetes
+8. **Cloud Ready:** Deployable to Azure (App Service + Static Web App via Terraform)
