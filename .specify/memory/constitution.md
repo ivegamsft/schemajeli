@@ -48,14 +48,14 @@ ALL new code MUST use "SchemaJeli" branding. No legacy "CompanyName" branding in
 ## Architecture & Technology Standards
 
 ### MUST Adopt
-- **Backend:** Node.js 18+ LTS with Express.js OR Python 3.11+ with FastAPI
-- **Frontend:** React 18+ with TypeScript
-- **Database:** PostgreSQL 14+ (primary)
+- **Backend:** Node.js 18+ LTS with Express.js and TypeScript
+- **Frontend:** React 19 with TypeScript
+- **Database:** PostgreSQL 15+ (primary)
 - **Container:** Docker with multi-stage builds
-- **Orchestration:** Kubernetes (AKS recommended)
+- **Deployment:** Azure App Service (backend) + Azure Static Web App (frontend)
 - **API Design:** REST with OpenAPI 3.0 specification
-- **Authentication:** JWT with 1-hour expiry, refresh tokens
-- **Logging:** Structured JSON logs to centralized system
+- **Authentication:** Azure Entra ID (MSAL) — JWT with JWKS validation, no local passwords
+- **Logging:** Structured JSON logs via Winston to Application Insights
 
 ### MUST NOT Adopt (Legacy)
 - VBScript/ASP (except for migration utilities)
@@ -82,8 +82,8 @@ ALL new code MUST use "SchemaJeli" branding. No legacy "CompanyName" branding in
 
 ### Mandatory Security Controls
 - All data transmitted over HTTPS/TLS
-- Password minimum 12 characters, complexity required
-- MFA optional for users, mandatory for admins
+- Password minimum 12 characters, complexity required (for Entra ID policy — not managed locally)
+- MFA optional for users, mandatory for admins (managed via Entra ID Conditional Access)
 - Rate limiting: 100 requests/minute per user
 - Input validation on all forms and API endpoints
 - CSRF tokens on all state-changing operations

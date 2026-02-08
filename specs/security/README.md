@@ -169,7 +169,7 @@ All secrets stored in Azure Key Vault:
 - Failed authentication attempts
 - Permission denied events
 - Unauthorized access attempts
-- API rate limiting
+- API rate limiting (see Rate Limiting section below)
 
 ### Compliance
 - GDPR data retention policies
@@ -177,10 +177,59 @@ All secrets stored in Azure Key Vault:
 - Data residency requirements (Azure region)
 - Backup and recovery procedures
 
+## Rate Limiting
+
+### Thresholds
+- **Per-user limit:** 100 requests per minute (sliding window)
+- **Unauthenticated endpoints:** 20 requests per minute per IP
+- **Authentication endpoints:** 10 requests per minute per IP (brute-force protection)
+
+### Behavior
+- HTTP 429 (Too Many Requests) response when limit exceeded
+- `Retry-After` header included with seconds until next allowed request
+- `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers on all responses
+- Rate limit state stored in-memory (single instance) or Redis (scaled deployment)
+
+### Exemptions
+- Health check endpoint (`/api/v1/health`) is exempt from rate limiting
+
+## Role Lifecycle & Group Synchronization
+
+### Group-to-Role Sync
+- Roles are resolved **on each authenticated request** from the JWT token claims
+- Group membership is read from the `groups` claim in the token (requires Entra ID "Group Claims" configuration)
+- **Cache TTL:** 15 minutes — group-to-role mappings are cached per user session to reduce token introspection overhead
+- Cache is invalidated on explicit logout or token expiration
+
+### User Deprovisioning
+- Disabled Entra ID accounts are denied access at the JWT validation layer (token issuance ceases)
+- No local user records to deactivate; all identity is delegated to Entra ID
+- Audit log retains historical records for deprovisioned users (soft-delete compliant)
+
+## Failure Handling & Resilience
+
+### Graph API Failures (OBO Flow)
+- If Graph API is unreachable, OBO-dependent features (e.g., profile photo, org chart) degrade gracefully
+- Backend returns partial responses with a `warnings` array indicating degraded fields
+- **Circuit breaker:** After 5 consecutive Graph API failures within 60 seconds, the circuit opens for 30 seconds before retrying
+- All Graph API errors are logged with correlation IDs for troubleshooting
+
+### Azure Key Vault Failures
+- Secrets are cached in-memory at application startup with a **6-hour refresh interval**
+- If Key Vault is unreachable during refresh, the application continues using cached secrets and logs a warning
+- If Key Vault is unreachable at startup (cold start), the application fails fast with a clear error message
+- Health check endpoint reports Key Vault connectivity status
+
+### Token Refresh Edge Cases
+- **Silent refresh failure:** If MSAL silent token acquisition fails, the user is prompted to re-authenticate via interactive flow
+- **Concurrent sessions:** Multiple browser tabs share the same MSAL token cache in localStorage; MSAL handles lock contention
+- **Concurrent role changes:** Role changes in Entra ID take effect on next token issuance (typically within 1 hour or on next login)
+- **Clock skew:** JWT validation allows a 5-minute clock skew tolerance for `nbf` and `exp` claims
+
 ## Security Best Practices
 
 ### Frontend
-- Never store sensitive data in localStorage (tokens only)
+- Token storage: MSAL-managed tokens in localStorage are acceptable per [Microsoft guidance](https://learn.microsoft.com/en-us/entra/identity-platform/scenario-spa-sign-in); no other sensitive data (PII, credentials, API keys) may be stored client-side
 - Validate all user input
 - Use HTTPS only
 - Implement CSRF protection
@@ -190,7 +239,7 @@ All secrets stored in Azure Key Vault:
 - Validate all inputs server-side
 - Enforce RBAC on every endpoint
 - Log security events
-- Implement rate limiting
+- Implement rate limiting (see Rate Limiting section)
 - Regular dependency updates
 
 ### Infrastructure
@@ -199,6 +248,28 @@ All secrets stored in Azure Key Vault:
 - Azure Security Center monitoring
 - Regular security assessments
 - Principle of least privilege
+
+## Performance & Observability Targets
+
+### Security-Related Performance
+- **JWT validation:** < 10ms per request (JWKS keys cached in memory)
+- **RBAC authorization check:** < 5ms per request
+- **Rate limit evaluation:** < 2ms per request
+- **OBO token exchange:** < 500ms p95 (network-dependent)
+
+### Security Observability Metrics
+- Authentication success/failure rate (per minute)
+- Rate limit trigger count (per endpoint, per minute)
+- RBAC denial count by role and endpoint
+- OBO flow latency and failure rate
+- Token refresh success/failure rate
+- Circuit breaker state transitions (Graph API, Key Vault)
+
+### Alerting Thresholds
+- **Critical:** > 50 failed auth attempts per minute from a single IP
+- **Warning:** > 10 rate limit triggers per minute for a single user
+- **Critical:** Key Vault unreachable for > 5 minutes
+- **Warning:** OBO flow error rate > 5% over 5-minute window
 
 ## Incident Response
 
@@ -214,3 +285,13 @@ All secrets stored in Azure Key Vault:
 ### Security Contact
 - Report issues to: security@ibuyspy.net
 - Response time: 24 hours for critical issues
+
+## Clarifications
+
+### Session 2026-01-29
+
+- Q: What is the password policy for local development mock authentication? → A: No local password auth; use RBAC_MOCK_ROLES environment variable for dev only; production exclusively uses Azure Entra ID
+- Q: How should API keys for third-party integrations be managed? → A: Store in Azure Key Vault with 180-day rotation; use managed identity for Azure service auth (passwordless preferred)
+- Q: What is the session timeout configuration? → A: No server-side session state; JWT access tokens 1-hour expiry (handled by Entra ID); MSAL handles silent refresh
+- Q: How should SQL injection be prevented? → A: Prisma ORM parameterized queries exclusively; no raw SQL concatenation allowed; static analysis (ESLint security plugin) enforces
+- Q: What content security policy (CSP) should the frontend enforce? → A: `default-src 'self'; script-src 'self'; connect-src 'self' https://login.microsoftonline.com https://*.azure.com; img-src 'self' data: https:`

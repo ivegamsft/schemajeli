@@ -27,6 +27,7 @@ Browse and document database tables.
 - Support table types: TABLE, VIEW, MATERIALIZED_VIEW
 - Track row count estimates
 - View table elements (columns)
+- Concurrent editing: Last-write-wins with conflict detection (HTTP 409 on timestamp mismatch)
 
 ### 4. Column/Element Management
 Detailed column-level metadata.
@@ -50,9 +51,11 @@ Maintain business term abbreviations and definitions.
 Cross-entity search across servers, databases, tables, elements, abbreviations.
 
 - Full-text search
-- Pagination of results
+- Pagination of results (default 25, max 200 per page)
 - Entity type filtering
 - Result highlighting/context
+- Empty result handling: Return empty array with clear "No results found" message
+- Large result sets: Performance target <500ms p95 for searches across ~1M column metadata records
 
 ### 7. Report Generation
 Export and document schema information.
@@ -61,6 +64,8 @@ Export and document schema information.
 - Support multiple formats: SQL, JSON, TXT
 - Database schema export
 - Full or filtered exports
+- Performance: DDL generation <2s for single database export
+- Error recovery: Retry with exponential backoff (3 attempts); partial results with error notification if subset fails
 
 ### 8. Authentication & Authorization
 Enterprise authentication with role-based access control.
@@ -78,6 +83,8 @@ Track changes and system health.
 - Change tracking (createdAt, updatedAt, createdBy)
 - Application Insights monitoring
 - Health checks
+- Data retention: 7-year audit log retention per compliance requirements
+- Soft delete visibility: Deleted entities hidden by default; Admin can query via `?status=deleted` filter
 
 ## User Stories
 
@@ -123,3 +130,13 @@ Track changes and system health.
 - Data lineage tracking
 - Advanced reporting
 - API versioning
+
+## Clarifications
+
+### Session 2026-01-29
+
+- Q: What is the expected data volume for the system at enterprise scale? → A: ~500 servers, ~2K databases, ~50K tables, ~1M columns (comprehensive enterprise metadata repository scale)
+- Q: What are the performance targets for core operations? → A: Simple queries <100ms p95, complex searches <500ms p95, DDL generation <2s for single database
+- Q: How should the system handle concurrent editing conflicts? → A: Last-write-wins with conflict detection: return HTTP 409 with current version if update timestamp mismatch detected
+- Q: What are the data retention and soft delete visibility rules? → A: Soft-deleted entities hidden by default; Admin can query deleted entities via `?status=deleted` filter; 7-year audit retention per compliance
+- Q: What error recovery mechanisms exist for failed DDL report generation? → A: Retry with exponential backoff (3 attempts); partial results with error notification if schema read fails for subset of tables

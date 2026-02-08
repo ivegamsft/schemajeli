@@ -1,0 +1,1567 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli API
+  description: |
+    REST API for SchemaJeli - Modern Database Metadata Repository System
+    
+    ## Authentication
+    All endpoints require Azure Entra ID authentication via JWT bearer token.
+    Token must be included in `Authorization: Bearer <token>` header.
+    
+    ## Authorization
+    Role-based access control (RBAC):
+    - **ADMIN**: Full access (CRUD all entities, manage users)
+    - **MAINTAINER**: Create/update/delete metadata (servers, databases, tables, elements, abbreviations)
+    - **VIEWER**: Read-only access (GET endpoints only)
+    
+    ## Soft Deletes
+    All entities use soft deletes. Deleted entities are not physically removed.
+    Admin users can query deleted entities via `?status=deleted` query parameter.
+    
+    ## Pagination
+    List endpoints support pagination via `page` and `limit` query parameters:
+    - Default: 25 items per page
+    - Maximum: 200 items per page
+    
+    ## Error Handling
+    API returns standard HTTP status codes:
+    - 200: Success
+    - 201: Created
+    - 204: No Content (delete success)
+    - 400: Bad Request (validation error)
+    - 401: Unauthorized (missing/invalid token)
+    - 403: Forbidden (insufficient permissions)
+    - 404: Not Found
+    - 409: Conflict (concurrent edit conflict)
+    - 500: Internal Server Error
+  version: 1.0.0
+  contact:
+    name: SchemaJeli Team
+    email: support@schemajeli.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://staging-api.schemajeli.com/api
+    description: Staging environment
+  - url: https://api.schemajeli.com/api
+    description: Production environment
+
+tags:
+  - name: Authentication
+    description: Authentication and authorization endpoints
+  - name: Servers
+    description: Database server management
+  - name: Databases
+    description: Database management
+  - name: Tables
+    description: Table/view management
+  - name: Elements
+    description: Column/element management
+  - name: Abbreviations
+    description: Business term abbreviation management
+  - name: Search
+    description: Cross-entity full-text search
+  - name: Reports
+    description: DDL report generation
+  - name: Health
+    description: Health check endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure Entra ID JWT token
+
+  schemas:
+    # Enums
+    Role:
+      type: string
+      enum: [ADMIN, MAINTAINER, VIEWER]
+    
+    ServerType:
+      type: string
+      enum: [POSTGRESQL, MYSQL, ORACLE, SQL_SERVER, INFORMIX, DB2]
+    
+    ServerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, MAINTENANCE]
+    
+    DatabaseStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    
+    TableType:
+      type: string
+      enum: [TABLE, VIEW, MATERIALIZED_VIEW]
+    
+    ReportFormat:
+      type: string
+      enum: [SQL, JSON, TXT]
+    
+    # User Schema
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, email, name, role, createdAt, updatedAt]
+    
+    # Server Schemas
+    Server:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        serverType:
+          $ref: '#/components/schemas/ServerType'
+        host:
+          type: string
+          description: Hostname or IP address
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Database'
+      required: [id, name, serverType, host, port, status, createdAt, updatedAt]
+    
+    ServerCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        serverType:
+          $ref: '#/components/schemas/ServerType'
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+          default: ACTIVE
+      required: [name, serverType, host, port]
+    
+    ServerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        serverType:
+          $ref: '#/components/schemas/ServerType'
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+    
+    # Database Schemas
+    Database:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serverId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        purpose:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DatabaseStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+        server:
+          $ref: '#/components/schemas/Server'
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Table'
+      required: [id, serverId, name, status, createdAt, updatedAt]
+    
+    DatabaseCreate:
+      type: object
+      properties:
+        serverId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        purpose:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DatabaseStatus'
+          default: ACTIVE
+      required: [serverId, name]
+    
+    DatabaseUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        purpose:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DatabaseStatus'
+    
+    # Table Schemas
+    Table:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        databaseId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        tableType:
+          $ref: '#/components/schemas/TableType'
+        rowCount:
+          type: integer
+          minimum: 0
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        lastAnalyzed:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+        database:
+          $ref: '#/components/schemas/Database'
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+      required: [id, databaseId, name, tableType, createdAt, updatedAt]
+    
+    TableCreate:
+      type: object
+      properties:
+        databaseId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        tableType:
+          $ref: '#/components/schemas/TableType'
+          default: TABLE
+        rowCount:
+          type: integer
+          minimum: 0
+          nullable: true
+        description:
+          type: string
+          nullable: true
+      required: [databaseId, name]
+    
+    TableUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        tableType:
+          $ref: '#/components/schemas/TableType'
+        rowCount:
+          type: integer
+          minimum: 0
+          nullable: true
+        description:
+          type: string
+          nullable: true
+    
+    # Element Schemas
+    Element:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tableId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        dataType:
+          type: string
+          description: Database data type (e.g., VARCHAR, INTEGER, TIMESTAMP)
+        length:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: For character types (VARCHAR(100))
+        precision:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: For numeric types (DECIMAL(10,2))
+        scale:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: For numeric types (DECIMAL(10,2))
+        isNullable:
+          type: boolean
+          default: true
+        isPrimaryKey:
+          type: boolean
+          default: false
+        isForeignKey:
+          type: boolean
+          default: false
+        defaultValue:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          minimum: 1
+          description: Column ordinal position (1-based)
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+        table:
+          $ref: '#/components/schemas/Table'
+      required: [id, tableId, name, dataType, position, isNullable, isPrimaryKey, isForeignKey, createdAt, updatedAt]
+    
+    ElementCreate:
+      type: object
+      properties:
+        tableId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        dataType:
+          type: string
+        length:
+          type: integer
+          minimum: 0
+          nullable: true
+        precision:
+          type: integer
+          minimum: 0
+          nullable: true
+        scale:
+          type: integer
+          minimum: 0
+          nullable: true
+        isNullable:
+          type: boolean
+          default: true
+        isPrimaryKey:
+          type: boolean
+          default: false
+        isForeignKey:
+          type: boolean
+          default: false
+        defaultValue:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+      required: [tableId, name, dataType, position]
+    
+    ElementUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        dataType:
+          type: string
+        length:
+          type: integer
+          minimum: 0
+          nullable: true
+        precision:
+          type: integer
+          minimum: 0
+          nullable: true
+        scale:
+          type: integer
+          minimum: 0
+          nullable: true
+        isNullable:
+          type: boolean
+        isPrimaryKey:
+          type: boolean
+        isForeignKey:
+          type: boolean
+        defaultValue:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+    
+    # Abbreviation Schemas
+    Abbreviation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        abbreviation:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sourceTerm:
+          type: string
+          minLength: 1
+          maxLength: 200
+        definition:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        category:
+          type: string
+          nullable: true
+        isPrimeClass:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/User'
+        updatedBy:
+          $ref: '#/components/schemas/User'
+      required: [id, abbreviation, sourceTerm, definition, isPrimeClass, createdAt, updatedAt]
+    
+    AbbreviationCreate:
+      type: object
+      properties:
+        abbreviation:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sourceTerm:
+          type: string
+          minLength: 1
+          maxLength: 200
+        definition:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        category:
+          type: string
+          nullable: true
+        isPrimeClass:
+          type: boolean
+          default: false
+      required: [abbreviation, sourceTerm, definition]
+    
+    AbbreviationUpdate:
+      type: object
+      properties:
+        abbreviation:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sourceTerm:
+          type: string
+          minLength: 1
+          maxLength: 200
+        definition:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        category:
+          type: string
+          nullable: true
+        isPrimeClass:
+          type: boolean
+    
+    # Search Schemas
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Search query text
+        entityTypes:
+          type: array
+          items:
+            type: string
+            enum: [SERVER, DATABASE, TABLE, ELEMENT, ABBREVIATION]
+          description: Filter by entity types (default: all)
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 25
+      required: [query]
+    
+    SearchResult:
+      type: object
+      properties:
+        entityType:
+          type: string
+          enum: [SERVER, DATABASE, TABLE, ELEMENT, ABBREVIATION]
+        entityId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        snippet:
+          type: string
+          description: Context snippet with search term highlighted
+        rank:
+          type: number
+          format: float
+          description: Search relevance score
+      required: [entityType, entityId, name, rank]
+    
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        total:
+          type: integer
+          description: Total number of results
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [results, total, page, limit, totalPages]
+    
+    # Report Schemas
+    ReportRequest:
+      type: object
+      properties:
+        serverId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Server ID (if null, export all servers)
+        databaseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Database ID (if null, export all databases in server)
+        format:
+          $ref: '#/components/schemas/ReportFormat'
+          default: SQL
+      required: [format]
+    
+    # Pagination
+    PaginatedServers:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Server'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [data, total, page, limit, totalPages]
+    
+    PaginatedDatabases:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Database'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [data, total, page, limit, totalPages]
+    
+    PaginatedTables:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Table'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [data, total, page, limit, totalPages]
+    
+    PaginatedElements:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Element'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [data, total, page, limit, totalPages]
+    
+    PaginatedAbbreviations:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Abbreviation'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+      required: [data, total, page, limit, totalPages]
+    
+    # Error Schemas
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error details (e.g., validation errors)
+      required: [error, message]
+    
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum: [VALIDATION_ERROR]
+        message:
+          type: string
+        details:
+          type: object
+          properties:
+            fields:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+      required: [error, message, details]
+    
+    # Health Check
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [OK, DEGRADED, DOWN]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [OK, DOWN]
+            auth:
+              type: string
+              enum: [OK, DOWN]
+      required: [status, timestamp, services]
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Health Check Endpoints
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check endpoint
+      description: Returns system health status
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Server Endpoints
+  /servers:
+    get:
+      tags: [Servers]
+      summary: List all servers
+      description: Returns paginated list of database servers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ServerStatus'
+        - name: serverType
+          in: query
+          schema:
+            $ref: '#/components/schemas/ServerType'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServers'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags: [Servers]
+      summary: Create new server
+      description: Creates a new database server (MAINTAINER or ADMIN role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerCreate'
+      responses:
+        '201':
+          description: Server created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (insufficient permissions)
+
+  /servers/{id}:
+    get:
+      tags: [Servers]
+      summary: Get server by ID
+      description: Returns detailed server information including databases
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags: [Servers]
+      summary: Update server
+      description: Updates an existing server (MAINTAINER or ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerUpdate'
+      responses:
+        '200':
+          description: Server updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        '400':
+          description: Validation error
+        '404':
+          description: Server not found
+        '409':
+          description: Conflict (concurrent edit detected)
+    
+    delete:
+      tags: [Servers]
+      summary: Delete server
+      description: Soft deletes a server and all child entities (ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Server deleted successfully
+        '403':
+          description: Forbidden (ADMIN role required)
+        '404':
+          description: Server not found
+
+  # Database Endpoints
+  /databases:
+    get:
+      tags: [Databases]
+      summary: List all databases
+      description: Returns paginated list of databases
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - name: serverId
+          in: query
+          description: Filter by server ID
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DatabaseStatus'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDatabases'
+    
+    post:
+      tags: [Databases]
+      summary: Create new database
+      description: Creates a new database within a server (MAINTAINER or ADMIN role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseCreate'
+      responses:
+        '201':
+          description: Database created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+
+  /databases/{id}:
+    get:
+      tags: [Databases]
+      summary: Get database by ID
+      description: Returns detailed database information including tables
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '404':
+          description: Database not found
+    
+    put:
+      tags: [Databases]
+      summary: Update database
+      description: Updates an existing database (MAINTAINER or ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseUpdate'
+      responses:
+        '200':
+          description: Database updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Database'
+        '400':
+          description: Validation error
+        '404':
+          description: Database not found
+        '409':
+          description: Conflict
+    
+    delete:
+      tags: [Databases]
+      summary: Delete database
+      description: Soft deletes a database and all child entities (ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Database deleted successfully
+        '403':
+          description: Forbidden
+        '404':
+          description: Database not found
+
+  # Table Endpoints
+  /tables:
+    get:
+      tags: [Tables]
+      summary: List all tables
+      description: Returns paginated list of tables
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - name: databaseId
+          in: query
+          description: Filter by database ID
+          schema:
+            type: string
+            format: uuid
+        - name: tableType
+          in: query
+          schema:
+            $ref: '#/components/schemas/TableType'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTables'
+    
+    post:
+      tags: [Tables]
+      summary: Create new table
+      description: Creates a new table within a database (MAINTAINER or ADMIN role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableCreate'
+      responses:
+        '201':
+          description: Table created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+
+  /tables/{id}:
+    get:
+      tags: [Tables]
+      summary: Get table by ID
+      description: Returns detailed table information including elements
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+        '404':
+          description: Table not found
+    
+    put:
+      tags: [Tables]
+      summary: Update table
+      description: Updates an existing table (MAINTAINER or ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableUpdate'
+      responses:
+        '200':
+          description: Table updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+        '400':
+          description: Validation error
+        '404':
+          description: Table not found
+        '409':
+          description: Conflict
+    
+    delete:
+      tags: [Tables]
+      summary: Delete table
+      description: Soft deletes a table and all child elements (ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Table deleted successfully
+        '403':
+          description: Forbidden
+        '404':
+          description: Table not found
+
+  # Element Endpoints
+  /elements:
+    get:
+      tags: [Elements]
+      summary: List all elements
+      description: Returns paginated list of table elements
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - name: tableId
+          in: query
+          description: Filter by table ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedElements'
+    
+    post:
+      tags: [Elements]
+      summary: Create new element
+      description: Creates a new element within a table (MAINTAINER or ADMIN role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementCreate'
+      responses:
+        '201':
+          description: Element created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Element'
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+
+  /elements/{id}:
+    get:
+      tags: [Elements]
+      summary: Get element by ID
+      description: Returns detailed element information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Element'
+        '404':
+          description: Element not found
+    
+    put:
+      tags: [Elements]
+      summary: Update element
+      description: Updates an existing element (MAINTAINER or ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementUpdate'
+      responses:
+        '200':
+          description: Element updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Element'
+        '400':
+          description: Validation error
+        '404':
+          description: Element not found
+        '409':
+          description: Conflict
+    
+    delete:
+      tags: [Elements]
+      summary: Delete element
+      description: Soft deletes an element (ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Element deleted successfully
+        '403':
+          description: Forbidden
+        '404':
+          description: Element not found
+
+  # Abbreviation Endpoints
+  /abbreviations:
+    get:
+      tags: [Abbreviations]
+      summary: List all abbreviations
+      description: Returns paginated list of abbreviations
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: isPrimeClass
+          in: query
+          description: Filter by prime class
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAbbreviations'
+    
+    post:
+      tags: [Abbreviations]
+      summary: Create new abbreviation
+      description: Creates a new abbreviation (MAINTAINER or ADMIN role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbbreviationCreate'
+      responses:
+        '201':
+          description: Abbreviation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Abbreviation'
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+
+  /abbreviations/{id}:
+    get:
+      tags: [Abbreviations]
+      summary: Get abbreviation by ID
+      description: Returns detailed abbreviation information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Abbreviation'
+        '404':
+          description: Abbreviation not found
+    
+    put:
+      tags: [Abbreviations]
+      summary: Update abbreviation
+      description: Updates an existing abbreviation (MAINTAINER or ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbbreviationUpdate'
+      responses:
+        '200':
+          description: Abbreviation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Abbreviation'
+        '400':
+          description: Validation error
+        '404':
+          description: Abbreviation not found
+        '409':
+          description: Conflict
+    
+    delete:
+      tags: [Abbreviations]
+      summary: Delete abbreviation
+      description: Soft deletes an abbreviation (ADMIN role required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Abbreviation deleted successfully
+        '403':
+          description: Forbidden
+        '404':
+          description: Abbreviation not found
+
+  # Search Endpoints
+  /search:
+    post:
+      tags: [Search]
+      summary: Full-text search
+      description: Search across all entities (servers, databases, tables, elements, abbreviations)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Validation error
+
+  # Report Endpoints
+  /reports/ddl:
+    post:
+      tags: [Reports]
+      summary: Generate DDL report
+      description: Generate Data Definition Language report in specified format (SQL, JSON, TXT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+      responses:
+        '200':
+          description: DDL report generated successfully
+          content:
+            application/sql:
+              schema:
+                type: string
+                description: SQL DDL statements
+            application/json:
+              schema:
+                type: object
+                description: JSON schema structure
+            text/plain:
+              schema:
+                type: string
+                description: Human-readable table documentation
+        '400':
+          description: Validation error
+        '404':
+          description: Server or database not found
+        '500':
+          description: Report generation error
