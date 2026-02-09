@@ -57,9 +57,9 @@ All schema entities (Server, Database, Table, Element) use a **lifecycle-oriente
 
 ### Entra ID Integration (Sole Auth Provider)
 - **No local username/password authentication** — all auth is via Azure Entra ID
-- Tenant: ibuyspy.net (62837751-4e48-4d06-8bcb-57be1a669b78)
-- Backend App: b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
-- Frontend App: 97a5b577-ca4e-4250-844d-3b167e4496c6
+- Tenant: <tenant-domain> (<tenant-id>)
+- Backend App: <backend-app-registration-id>
+- Frontend App: <frontend-app-registration-id>
 - User account management (create, modify, disable) is handled in Entra ID, not in SchemaJeli
 - Dev fallback: `RBAC_MOCK_ROLES` env var for local testing without Azure
 

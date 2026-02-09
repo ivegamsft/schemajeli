@@ -1,0 +1,882 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli Thematic Guides API
+  description: |
+    CRUD operations for thematic naming guides (US-1, US-2, US-5).
+    Allows Administrators to create custom and built-in-derived guides,
+    view guide details, and customize pre-built themes.
+  version: 1.0.0
+  contact:
+    name: SchemaJeli Team
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Thematic Guides
+    description: CRUD operations for thematic naming guides
+
+paths:
+  /thematic-guides:
+    get:
+      operationId: listThematicGuides
+      summary: List thematic guides
+      description: |
+        Returns a paginated list of thematic guides accessible to the current user.
+        Supports filtering by category, active status, and search by name.
+        Soft-deleted guides are excluded by default.
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: category
+          in: query
+          description: Filter by theme category
+          schema:
+            $ref: '#/components/schemas/ThemeCategory'
+        - name: isActive
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+        - name: isBuiltIn
+          in: query
+          description: Filter by built-in status
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search guides by name (case-insensitive partial match)
+          schema:
+            type: string
+            maxLength: 100
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [name, createdAt, updatedAt]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Paginated list of thematic guides
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ThematicGuideSummary'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+              example:
+                data:
+                  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    name: "Harry Potter"
+                    description: "Naming guide based on the Wizarding World"
+                    themeCategory: FICTION
+                    isBuiltIn: true
+                    isActive: true
+                    version: 1
+                    iconUrl: "/icons/harry-potter.svg"
+                    elementCount: 52
+                    createdBy: "user@example.com"
+                    createdAt: "2026-02-08T14:30:00.000Z"
+                    updatedAt: "2026-02-08T14:30:00.000Z"
+                meta:
+                  total: 12
+                  page: 1
+                  perPage: 20
+                  totalPages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      operationId: createThematicGuide
+      summary: Create a thematic guide
+      description: |
+        Creates a new thematic naming guide. Supports two creation modes:
+        - **Custom** (US-1): Provide a theme name, category, and custom elements.
+        - **From built-in** (US-2): Provide a `libraryItemId` to clone a built-in theme.
+
+        Requires Admin role (FR-011). Minimum 3 elements required (FR-001).
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateThematicGuideRequest'
+            examples:
+              customGuide:
+                summary: Create a custom guide (US-1)
+                value:
+                  name: "Greek Titans"
+                  description: "Custom theme based on Greek Titan mythology"
+                  themeCategory: CUSTOM
+                  elements:
+                    - elementText: "kronos"
+                      elementType: CHARACTER
+                      displayOrder: 0
+                    - elementText: "atlas"
+                      elementType: CHARACTER
+                      displayOrder: 1
+                    - elementText: "prometheus"
+                      elementType: CHARACTER
+                      displayOrder: 2
+                    - elementText: "olympus"
+                      elementType: PLACE
+                      displayOrder: 3
+              fromBuiltIn:
+                summary: Create guide from built-in theme (US-2)
+                value:
+                  name: "My Harry Potter Guide"
+                  description: "Team Alpha's Harry Potter naming guide"
+                  libraryItemId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+      responses:
+        '201':
+          description: Guide created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ThematicGuide'
+              example:
+                data:
+                  id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  name: "Greek Titans"
+                  description: "Custom theme based on Greek Titan mythology"
+                  themeCategory: CUSTOM
+                  isBuiltIn: false
+                  isActive: true
+                  version: 1
+                  iconUrl: null
+                  createdBy: "admin@example.com"
+                  createdAt: "2026-02-08T15:00:00.000Z"
+                  updatedAt: "2026-02-08T15:00:00.000Z"
+                  deletedAt: null
+                  elements:
+                    - id: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                      elementText: "kronos"
+                      elementType: CHARACTER
+                      displayOrder: 0
+                      usageCount: 0
+                      lastUsedAt: null
+                    - id: "e5f6a7b8-c9d0-1234-efab-345678901234"
+                      elementText: "atlas"
+                      elementType: CHARACTER
+                      displayOrder: 1
+                      usageCount: 0
+                      lastUsedAt: null
+                    - id: "f6a7b8c9-d0e1-2345-fabc-456789012345"
+                      elementText: "prometheus"
+                      elementType: CHARACTER
+                      displayOrder: 2
+                      usageCount: 0
+                      lastUsedAt: null
+                    - id: "a7b8c9d0-e1f2-3456-abcd-567890123456"
+                      elementText: "olympus"
+                      elementType: PLACE
+                      displayOrder: 3
+                      usageCount: 0
+                      lastUsedAt: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Guide name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: CONFLICT
+                message: "A thematic guide with name 'Greek Titans' already exists"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /thematic-guides/{id}:
+    get:
+      operationId: getThematicGuide
+      summary: Get guide details
+      description: |
+        Returns full details of a thematic guide including all elements.
+        US-1 scenario 3: View guide details with element list.
+        US-2 scenario 3: View guide details including theme category and element count.
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GuideIdParam'
+        - name: includeUsageStats
+          in: query
+          description: Include per-element usage statistics
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Guide details with elements
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ThematicGuide'
+              example:
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Harry Potter"
+                  description: "Naming guide based on the Wizarding World"
+                  themeCategory: FICTION
+                  isBuiltIn: true
+                  isActive: true
+                  version: 1
+                  iconUrl: "/icons/harry-potter.svg"
+                  createdBy: "admin@example.com"
+                  createdAt: "2026-02-08T14:30:00.000Z"
+                  updatedAt: "2026-02-08T14:30:00.000Z"
+                  deletedAt: null
+                  elements:
+                    - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      elementText: "dumbledore"
+                      elementType: CHARACTER
+                      displayOrder: 0
+                      usageCount: 5
+                      lastUsedAt: "2026-02-08T16:00:00.000Z"
+                    - id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                      elementText: "hogwarts"
+                      elementType: PLACE
+                      displayOrder: 1
+                      usageCount: 2
+                      lastUsedAt: "2026-02-08T15:30:00.000Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      operationId: updateThematicGuide
+      summary: Update/customize a guide
+      description: |
+        Updates an existing thematic guide. Supports full and partial updates.
+        US-5: Customize pre-built theme by adding, removing, or replacing elements.
+        Increments the guide version number on each update (FR-006).
+        Requires Admin role (FR-011).
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Admin]
+      parameters:
+        - $ref: '#/components/parameters/GuideIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateThematicGuideRequest'
+            examples:
+              addElements:
+                summary: Add custom elements to guide (US-5 scenario 1)
+                value:
+                  addElements:
+                    - elementText: "dobby"
+                      elementType: CHARACTER
+                      displayOrder: 52
+                    - elementText: "neville"
+                      elementType: CHARACTER
+                      displayOrder: 53
+              removeElements:
+                summary: Remove elements from guide (US-5 scenario 3)
+                value:
+                  removeElementIds:
+                    - "d4e5f6a7-b8c9-0123-defa-234567890123"
+              updateMetadata:
+                summary: Update guide metadata
+                value:
+                  name: "Harry Potter (Modified)"
+                  description: "Team Alpha's customized Harry Potter guide"
+              fullCustomization:
+                summary: Full customization (US-5 scenario 4)
+                value:
+                  name: "Harry Potter (Modified)"
+                  description: "Team Alpha's customized Harry Potter guide"
+                  addElements:
+                    - elementText: "dobby"
+                      elementType: CHARACTER
+                      displayOrder: 52
+                  removeElementIds:
+                    - "d4e5f6a7-b8c9-0123-defa-234567890123"
+      responses:
+        '200':
+          description: Guide updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ThematicGuide'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Guide name conflict or element duplicate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      operationId: deleteThematicGuide
+      summary: Soft-delete a guide
+      description: |
+        Soft-deletes a thematic guide by setting deletedAt timestamp.
+        Built-in guides cannot be deleted, only deactivated.
+        Requires Admin role (FR-011). Constitution: no physical deletes.
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Admin]
+      parameters:
+        - $ref: '#/components/parameters/GuideIdParam'
+      responses:
+        '200':
+          description: Guide soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      deletedAt:
+                        type: string
+                        format: date-time
+              example:
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  deletedAt: "2026-02-08T18:00:00.000Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Cannot delete a built-in guide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNPROCESSABLE_ENTITY
+                message: "Built-in guides cannot be deleted. Use PATCH to deactivate instead."
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /thematic-guides/{id}/preview:
+    post:
+      operationId: previewThematicGuide
+      summary: Preview naming suggestions for a guide
+      description: |
+        Generates a preview of naming suggestions without committing (FR-008).
+        US-1 scenario 3: Shows sample element names using theme.
+        US-5 scenario 2: Preview after customization.
+        Does not create ThemeUsageRecords.
+      tags: [Thematic Guides]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GuideIdParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entityTypes:
+                  type: array
+                  description: Entity types to generate preview for
+                  items:
+                    $ref: '#/components/schemas/SchemaEntityType'
+                  default: [table, column]
+                count:
+                  type: integer
+                  description: Number of sample names per entity type
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                prefix:
+                  type: string
+                  description: Optional prefix for generated names
+                  maxLength: 20
+            example:
+              entityTypes: [table, column]
+              count: 5
+              prefix: "tbl"
+      responses:
+        '200':
+          description: Preview suggestions (read-only, not persisted)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [guideId, guideName, previews]
+                    properties:
+                      guideId:
+                        type: string
+                        format: uuid
+                      guideName:
+                        type: string
+                      previews:
+                        type: array
+                        items:
+                          type: object
+                          required: [entityType, suggestions]
+                          properties:
+                            entityType:
+                              $ref: '#/components/schemas/SchemaEntityType'
+                            suggestions:
+                              type: array
+                              items:
+                                type: object
+                                required: [name, elementText, elementType]
+                                properties:
+                                  name:
+                                    type: string
+                                    description: Formatted suggested name
+                                  elementText:
+                                    type: string
+                                    description: Base theme element
+                                  elementType:
+                                    $ref: '#/components/schemas/ElementType'
+              example:
+                data:
+                  guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  guideName: "Harry Potter"
+                  previews:
+                    - entityType: table
+                      suggestions:
+                        - name: "tbl_dumbledore"
+                          elementText: "dumbledore"
+                          elementType: CHARACTER
+                        - name: "tbl_hermione"
+                          elementText: "hermione"
+                          elementType: CHARACTER
+                        - name: "tbl_harry"
+                          elementText: "harry"
+                          elementType: CHARACTER
+                    - entityType: column
+                      suggestions:
+                        - name: "col_elder_wand"
+                          elementText: "elder_wand"
+                          elementType: OBJECT
+                        - name: "col_polyjuice"
+                          elementText: "polyjuice"
+                          elementType: OBJECT
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure Entra ID JWT token
+
+  parameters:
+    GuideIdParam:
+      name: id
+      in: path
+      required: true
+      description: Thematic guide UUID
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-based)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      description: Results per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    ThemeCategory:
+      type: string
+      enum: [FICTION, NATURE, CULTURE, CUSTOM]
+      description: Classification of the theme origin
+
+    ElementType:
+      type: string
+      enum: [CHARACTER, PLACE, OBJECT, CONCEPT, OTHER]
+      description: Category of a theme element for context-aware suggestions
+
+    SchemaEntityType:
+      type: string
+      enum: [schema, table, column, index, constraint]
+      description: Type of database schema entity
+
+    ThematicGuideSummary:
+      type: object
+      required: [id, name, themeCategory, isBuiltIn, isActive, version, createdBy, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        themeCategory:
+          $ref: '#/components/schemas/ThemeCategory'
+        isBuiltIn:
+          type: boolean
+        isActive:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+        iconUrl:
+          type: string
+          maxLength: 255
+          nullable: true
+        elementCount:
+          type: integer
+          minimum: 0
+          description: Total number of elements in the guide
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ThematicGuide:
+      type: object
+      required: [id, name, themeCategory, isBuiltIn, isActive, version, createdBy, createdAt, updatedAt, elements]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        themeCategory:
+          $ref: '#/components/schemas/ThemeCategory'
+        isBuiltIn:
+          type: boolean
+        isActive:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+        iconUrl:
+          type: string
+          maxLength: 255
+          nullable: true
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThemeElement'
+
+    ThemeElement:
+      type: object
+      required: [id, elementText, elementType, displayOrder, usageCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        elementText:
+          type: string
+          maxLength: 100
+          pattern: '^[a-zA-Z][a-zA-Z0-9_ .\-]*$'
+        elementType:
+          $ref: '#/components/schemas/ElementType'
+        displayOrder:
+          type: integer
+          minimum: 0
+        usageCount:
+          type: integer
+          minimum: 0
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateThematicGuideRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Unique display name for the guide
+        description:
+          type: string
+          maxLength: 500
+          description: Human-readable description
+        themeCategory:
+          $ref: '#/components/schemas/ThemeCategory'
+        iconUrl:
+          type: string
+          maxLength: 255
+          description: URL/path to theme icon
+        libraryItemId:
+          type: string
+          format: uuid
+          description: |
+            ID of a ThemeLibraryItem to clone elements from (US-2).
+            When provided, elements are seeded from the library item.
+            Cannot be combined with the elements field.
+        elements:
+          type: array
+          minItems: 3
+          maxItems: 1000
+          description: |
+            Custom elements for the guide (US-1).
+            Required when libraryItemId is not provided.
+            Cannot be combined with libraryItemId.
+          items:
+            type: object
+            required: [elementText]
+            properties:
+              elementText:
+                type: string
+                minLength: 1
+                maxLength: 100
+                pattern: '^[a-zA-Z][a-zA-Z0-9_ .\-]*$'
+              elementType:
+                $ref: '#/components/schemas/ElementType'
+              displayOrder:
+                type: integer
+                minimum: 0
+      description: |
+        Provide either `libraryItemId` (to clone from built-in) or
+        `elements` (for custom guide). At least one is required.
+
+    UpdateThematicGuideRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Updated display name
+        description:
+          type: string
+          maxLength: 500
+          description: Updated description
+        themeCategory:
+          $ref: '#/components/schemas/ThemeCategory'
+        iconUrl:
+          type: string
+          maxLength: 255
+          nullable: true
+        isActive:
+          type: boolean
+          description: Activate or deactivate the guide
+        addElements:
+          type: array
+          description: New elements to add (US-5 scenario 1)
+          items:
+            type: object
+            required: [elementText]
+            properties:
+              elementText:
+                type: string
+                minLength: 1
+                maxLength: 100
+                pattern: '^[a-zA-Z][a-zA-Z0-9_ .\-]*$'
+              elementType:
+                $ref: '#/components/schemas/ElementType'
+              displayOrder:
+                type: integer
+                minimum: 0
+        removeElementIds:
+          type: array
+          description: IDs of elements to remove (US-5 scenario 3)
+          items:
+            type: string
+            format: uuid
+      description: |
+        At least one field must be provided.
+        After update, guide must still have ≥ 3 elements (FR-001).
+
+    PaginationMeta:
+      type: object
+      required: [total, page, perPage, totalPages]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of matching records
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+        perPage:
+          type: integer
+          minimum: 1
+          description: Results per page
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Total number of pages
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          description: Additional error context
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: BAD_REQUEST
+            message: "Validation failed"
+            details:
+              - field: name
+                message: "Name is required"
+              - field: elements
+                message: "Minimum 3 elements required"
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: UNAUTHORIZED
+            message: "Authentication required. Provide a valid Azure Entra ID JWT token."
+    Forbidden:
+      description: Insufficient permissions (requires Admin role)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: FORBIDDEN
+            message: "Admin role required to perform this action"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: NOT_FOUND
+            message: "Thematic guide not found"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: INTERNAL_ERROR
+            message: "An unexpected error occurred"

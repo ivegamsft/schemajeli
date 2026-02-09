@@ -9,9 +9,9 @@ Security architecture, authentication, authorization, and compliance requirement
 SchemaJeli uses Azure Entra ID for enterprise-grade authentication.
 
 #### Configuration
-- **Tenant:** ibuyspy.net (62837751-4e48-4d06-8bcb-57be1a669b78)
-- **Backend App Registration:** b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
-- **Frontend App Registration:** 97a5b577-ca4e-4250-844d-3b167e4496c6
+- **Tenant:** <tenant-domain>
+- **Backend App Registration:** <backend-app-registration-id>
+- **Frontend App Registration:** <frontend-app-registration-id>
 
 #### Frontend (MSAL)
 - OpenID Connect with MSAL (@azure/msal-browser)
@@ -81,8 +81,8 @@ Payload:
   "email": "<user-email>",
   "roles": ["Admin"],
   "groups": ["<group-id>"],
-  "aud": "api://b521d5cf-a911-4ea4-bba6-109a1fcb9fe9",
-  "iss": "https://sts.windows.net/62837751-4e48-4d06-8bcb-57be1a669b78/",
+  "aud": "api://<backend-app-registration-id>",
+  "iss": "https://sts.windows.net/<tenant-id>/",
   "exp": <expiration-time>,
   "iat": <issued-at-time>,
   "nbf": <not-before-time>
@@ -283,7 +283,7 @@ All secrets stored in Azure Key Vault:
 7. Monitor for recurrence
 
 ### Security Contact
-- Report issues to: security@ibuyspy.net
+- Report issues to: security@<tenant-domain>
 - Response time: 24 hours for critical issues
 
 ## Clarifications

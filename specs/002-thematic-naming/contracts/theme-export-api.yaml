@@ -1,0 +1,660 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli Theme Export/Import API
+  description: |
+    Export and import thematic guides as portable JSON files (US-6, FR-012, FR-013).
+    Uses a self-describing JSON envelope with JSON Schema validation,
+    semantic versioning, and strict-mode import (research.md §4).
+
+    **Export format**: Self-describing JSON with `$schema`, `schemaVersion`,
+    `exportedAt`, `exportedBy`, `generator`, guide data, and SHA-256 checksum.
+
+    **Import validation pipeline**:
+    1. Parse JSON syntax
+    2. Validate against JSON Schema (ajv)
+    3. Check schema version compatibility
+    4. Verify SHA-256 checksum (warn on mismatch)
+    5. Apply business rules (≥3 elements, no duplicates, valid types)
+    6. Sanitize strings (strip HTML/scripts, normalize identifiers)
+
+    **Performance targets:**
+    - SC-006: Exported guides re-import without data loss 100% of the time
+    - Import + validate (1000 elements): <2 seconds
+  version: 1.0.0
+  contact:
+    name: SchemaJeli Team
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Theme Export/Import
+    description: Export and import thematic guides as JSON
+
+paths:
+  /thematic-guides/{id}/export:
+    get:
+      operationId: exportThematicGuide
+      summary: Export a thematic guide as JSON
+      description: |
+        Exports a thematic guide as a self-describing JSON file (US-6, FR-012).
+        The exported file includes all metadata, elements, and a SHA-256 checksum
+        for integrity verification.
+
+        Requires Viewer+ role (read-only operation).
+
+        The response includes:
+        - `$schema` URI for JSON Schema validation
+        - `schemaVersion` following semver (currently 1.0.0)
+        - `exportedAt` / `exportedBy` metadata
+        - `guide` object with all elements
+        - `metadata.checksum` (SHA-256 of guide object)
+
+        US-6 scenario 1: Downloads JSON with theme name, elements, metadata.
+        US-6 scenario 3: Human-readable JSON with clear structure.
+      tags: [Theme Export/Import]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Viewer, Maintainer, Admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Thematic guide UUID
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          description: Export format (currently only JSON supported)
+          schema:
+            type: string
+            enum: [json]
+            default: json
+        - name: download
+          in: query
+          description: |
+            If true, returns file with Content-Disposition attachment header.
+            If false, returns inline JSON response.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Exported guide JSON
+          headers:
+            Content-Disposition:
+              description: |
+                Present when download=true.
+                Format: attachment; filename="thematic-guide-{name}.json"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeExport'
+              example:
+                $schema: "https://schemajeli.com/schemas/thematic-guide/v1.json"
+                schemaVersion: "1.0.0"
+                exportedAt: "2026-02-08T14:30:00.000Z"
+                exportedBy: "admin@example.com"
+                generator: "SchemaJeli/1.0.0"
+                guide:
+                  name: "Harry Potter"
+                  description: "Naming guide based on the Wizarding World"
+                  themeCategory: "FICTION"
+                  version: 1
+                  elements:
+                    - elementText: "dumbledore"
+                      elementType: CHARACTER
+                      displayOrder: 0
+                    - elementText: "hermione"
+                      elementType: CHARACTER
+                      displayOrder: 1
+                    - elementText: "hogwarts"
+                      elementType: PLACE
+                      displayOrder: 2
+                    - elementText: "elder_wand"
+                      elementType: OBJECT
+                      displayOrder: 3
+                    - elementText: "expelliarmus"
+                      elementType: CONCEPT
+                      displayOrder: 4
+                metadata:
+                  elementCount: 5
+                  elementTypes: [CHARACTER, PLACE, OBJECT, CONCEPT]
+                  checksum: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /thematic-guides/import:
+    post:
+      operationId: importThematicGuide
+      summary: Import a thematic guide from JSON
+      description: |
+        Imports a thematic guide from a JSON file (US-6, FR-013).
+        Performs a strict multi-stage validation pipeline (research.md §4):
+
+        1. **Parse**: JSON syntax validation
+        2. **Schema validate**: Validate against JSON Schema (ajv, draft 2020-12)
+        3. **Version check**: Ensure schemaVersion is supported; apply migration if needed
+        4. **Checksum verify**: If present, verify SHA-256 (warn on mismatch, don't reject)
+        5. **Business rules**: ≥3 elements, no duplicate elementText, valid enum values, name uniqueness
+        6. **Sanitize**: Strip HTML/scripts, trim whitespace, normalize to valid SQL identifiers
+
+        Requires Admin role (creates new data; FR-011).
+
+        On success, creates a new ThematicGuide with isBuiltIn=false.
+        Duplicates are detected by guide name — use a different name or delete the existing guide.
+      tags: [Theme Export/Import]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeExport'
+            example:
+              schemaVersion: "1.0.0"
+              guide:
+                name: "Greek Titans"
+                description: "Custom theme based on Greek Titan mythology"
+                themeCategory: "CUSTOM"
+                elements:
+                  - elementText: "kronos"
+                    elementType: CHARACTER
+                    displayOrder: 0
+                  - elementText: "atlas"
+                    elementType: CHARACTER
+                    displayOrder: 1
+                  - elementText: "prometheus"
+                    elementType: CHARACTER
+                    displayOrder: 2
+                  - elementText: "olympus"
+                    elementType: PLACE
+                    displayOrder: 3
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JSON file to import (max 1MB)
+            encoding:
+              file:
+                contentType: application/json
+      responses:
+        '201':
+          description: Guide imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [guide, import]
+                    properties:
+                      guide:
+                        type: object
+                        required: [id, name, themeCategory, version, elementCount]
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            description: ID of the newly created guide
+                          name:
+                            type: string
+                          themeCategory:
+                            type: string
+                          version:
+                            type: integer
+                          elementCount:
+                            type: integer
+                      import:
+                        type: object
+                        required: [schemaVersion, importedAt, warnings]
+                        properties:
+                          schemaVersion:
+                            type: string
+                            description: Schema version of the imported file
+                          importedAt:
+                            type: string
+                            format: date-time
+                          checksumValid:
+                            type: boolean
+                            nullable: true
+                            description: |
+                              true if checksum matched, false if mismatched,
+                              null if no checksum was provided
+                          warnings:
+                            type: array
+                            description: Non-fatal import warnings
+                            items:
+                              type: object
+                              properties:
+                                code:
+                                  type: string
+                                message:
+                                  type: string
+              example:
+                data:
+                  guide:
+                    id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                    name: "Greek Titans"
+                    themeCategory: "CUSTOM"
+                    version: 1
+                    elementCount: 4
+                  import:
+                    schemaVersion: "1.0.0"
+                    importedAt: "2026-02-08T16:00:00.000Z"
+                    checksumValid: null
+                    warnings: []
+        '400':
+          description: JSON parse error or schema validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportErrorResponse'
+              examples:
+                parseError:
+                  summary: JSON syntax error
+                  value:
+                    error: BAD_REQUEST
+                    message: "Invalid JSON syntax"
+                    details:
+                      - path: ""
+                        code: JSON_PARSE_ERROR
+                        message: "Unexpected token } at position 245"
+                schemaError:
+                  summary: Schema validation errors
+                  value:
+                    error: BAD_REQUEST
+                    message: "Import validation failed"
+                    details:
+                      - path: "guide.elements[2].elementText"
+                        code: INVALID_FORMAT
+                        message: "Element text '123invalid' must start with a letter"
+                        suggestion: "Rename to 'invalid_123' or remove this element"
+                      - path: "guide.elements"
+                        code: DUPLICATE_ELEMENT
+                        message: "Duplicate element text 'dumbledore' at positions 0 and 5"
+                        suggestion: "Remove the duplicate entry at position 5"
+                      - path: "guide.elements"
+                        code: MIN_ELEMENTS
+                        message: "Minimum 3 elements required, found 2"
+                        suggestion: "Add at least 1 more element"
+                versionError:
+                  summary: Unsupported schema version
+                  value:
+                    error: BAD_REQUEST
+                    message: "Unsupported schema version"
+                    details:
+                      - path: "schemaVersion"
+                        code: UNSUPPORTED_VERSION
+                        message: "Schema version '3.0.0' is not supported. Supported: 1.0.0"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Guide name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: CONFLICT
+                message: "A thematic guide with name 'Harry Potter' already exists"
+                details:
+                  existingGuideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  suggestion: "Use a different name or delete the existing guide before importing"
+        '413':
+          description: Import file too large (max 1MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: PAYLOAD_TOO_LARGE
+                message: "Import file exceeds maximum size of 1MB"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /thematic-guides/import/validate:
+    post:
+      operationId: validateImport
+      summary: Validate an import file without persisting
+      description: |
+        Dry-run validation of a theme export file. Runs the full
+        validation pipeline (parse, schema, version, checksum, business rules)
+        without creating any database records.
+
+        Useful for pre-flight checks before committing to an import.
+        Requires Viewer+ role.
+      tags: [Theme Export/Import]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Viewer, Maintainer, Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeExport'
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [valid, summary]
+                    properties:
+                      valid:
+                        type: boolean
+                        description: Whether the file passes all validation checks
+                      summary:
+                        type: object
+                        required: [guideName, elementCount, schemaVersion]
+                        properties:
+                          guideName:
+                            type: string
+                          elementCount:
+                            type: integer
+                          schemaVersion:
+                            type: string
+                          themeCategory:
+                            type: string
+                          elementTypes:
+                            type: array
+                            items:
+                              type: string
+                      checksumValid:
+                        type: boolean
+                        nullable: true
+                      nameConflict:
+                        type: boolean
+                        description: Whether a guide with this name already exists
+                      warnings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            message:
+                              type: string
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            code:
+                              type: string
+                            message:
+                              type: string
+                            suggestion:
+                              type: string
+              example:
+                data:
+                  valid: true
+                  summary:
+                    guideName: "Greek Titans"
+                    elementCount: 4
+                    schemaVersion: "1.0.0"
+                    themeCategory: "CUSTOM"
+                    elementTypes: [CHARACTER, PLACE]
+                  checksumValid: null
+                  nameConflict: false
+                  warnings: []
+                  errors: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure Entra ID JWT token
+
+  schemas:
+    ThemeExport:
+      type: object
+      required: [schemaVersion, guide]
+      description: |
+        Self-describing JSON envelope for thematic guide export/import.
+        Follows the schema defined in research.md §4.
+      properties:
+        $schema:
+          type: string
+          description: JSON Schema URI for validation
+          example: "https://schemajeli.com/schemas/thematic-guide/v1.json"
+        schemaVersion:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          description: Semantic version of the export schema
+          example: "1.0.0"
+        exportedAt:
+          type: string
+          format: date-time
+          description: Export timestamp (set by server on export)
+        exportedBy:
+          type: string
+          description: User email/ID who performed the export
+        generator:
+          type: string
+          description: Application identifier that created the export
+          example: "SchemaJeli/1.0.0"
+        guide:
+          type: object
+          required: [name, elements]
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+              description: Display name for the guide
+            description:
+              type: string
+              maxLength: 500
+            themeCategory:
+              type: string
+              maxLength: 50
+              description: Theme classification
+            version:
+              type: integer
+              minimum: 1
+              description: Guide version number
+            elements:
+              type: array
+              minItems: 3
+              maxItems: 1000
+              description: Theme elements (3-1000)
+              items:
+                type: object
+                required: [elementText]
+                properties:
+                  elementText:
+                    type: string
+                    minLength: 1
+                    maxLength: 100
+                    pattern: '^[a-zA-Z][a-zA-Z0-9_ .\-]*$'
+                    description: |
+                      Themed name text. Must start with a letter.
+                      Valid characters: letters, digits, underscores, spaces, dots, hyphens.
+                  elementType:
+                    type: string
+                    enum: [CHARACTER, PLACE, OBJECT, CONCEPT, OTHER]
+                    default: OTHER
+                    description: Element category for context-aware suggestions
+                  displayOrder:
+                    type: integer
+                    minimum: 0
+                    description: Sort order within the guide
+        metadata:
+          type: object
+          description: Export metadata (generated on export, optional on import)
+          properties:
+            elementCount:
+              type: integer
+              description: Number of elements in the guide
+            elementTypes:
+              type: array
+              items:
+                type: string
+              description: Distinct element types present
+            checksum:
+              type: string
+              pattern: '^sha256:[a-f0-9]{64}$'
+              description: |
+                SHA-256 hash of the guide object for integrity verification.
+                Format: "sha256:{64-char hex digest}"
+
+    ImportErrorResponse:
+      type: object
+      required: [error, message, details]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          description: Structured validation errors with paths and suggestions
+          items:
+            type: object
+            required: [path, code, message]
+            properties:
+              path:
+                type: string
+                description: JSON path to the error (e.g., "guide.elements[2].elementText")
+              code:
+                type: string
+                description: |
+                  Machine-readable error code. Values:
+                  - JSON_PARSE_ERROR: Invalid JSON syntax
+                  - SCHEMA_VALIDATION: JSON Schema violation
+                  - UNSUPPORTED_VERSION: Unknown schemaVersion
+                  - CHECKSUM_MISMATCH: SHA-256 checksum failed (warning)
+                  - INVALID_FORMAT: Element text pattern mismatch
+                  - DUPLICATE_ELEMENT: Duplicate elementText in array
+                  - MIN_ELEMENTS: Fewer than 3 elements
+                  - NAME_CONFLICT: Guide name already exists
+                enum:
+                  - JSON_PARSE_ERROR
+                  - SCHEMA_VALIDATION
+                  - UNSUPPORTED_VERSION
+                  - CHECKSUM_MISMATCH
+                  - INVALID_FORMAT
+                  - DUPLICATE_ELEMENT
+                  - MIN_ELEMENTS
+                  - NAME_CONFLICT
+              message:
+                type: string
+                description: Human-readable error message
+              suggestion:
+                type: string
+                description: Actionable suggestion to fix the error
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          description: Additional error context
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object
+
+    PaginationMeta:
+      type: object
+      required: [total, page, perPage, totalPages]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        perPage:
+          type: integer
+          minimum: 1
+        totalPages:
+          type: integer
+          minimum: 0
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: UNAUTHORIZED
+            message: "Authentication required. Provide a valid Azure Entra ID JWT token."
+    Forbidden:
+      description: Insufficient permissions (requires Admin role)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: FORBIDDEN
+            message: "Admin role required to import thematic guides"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: NOT_FOUND
+            message: "Thematic guide not found"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: INTERNAL_ERROR
+            message: "An unexpected error occurred"

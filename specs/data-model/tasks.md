@@ -182,7 +182,7 @@ description: "Task list for Data Model feature implementation"
 
 ### Integration Test Files
 
-- [ ] T064 [P] Schema integration test in src/backend/tests/integration/schema.test.ts (verify all models, constraints, indexes)
+- [X] T064 [P] Schema integration test in src/backend/tests/integration/schema.test.ts (verify all models, constraints, indexes)
 - [ ] T065 [P] Migration integration test in src/backend/tests/integration/migrations.test.ts (verify migration applies cleanly, data integrity)
 - [ ] T066 [P] Soft delete integration test in src/backend/tests/integration/soft-delete.test.ts (verify filtering, cascade behavior)
 - [ ] T067 [P] Audit logging integration test in src/backend/tests/integration/audit-log.test.ts (verify all CRUD operations log correctly)

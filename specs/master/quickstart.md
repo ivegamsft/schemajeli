@@ -18,9 +18,9 @@ SchemaJeli is a modern metadata repository for managing database schemas across 
 
 ### Azure Entra ID Configuration (For Authentication)
 - Azure subscription with App Registration for:
-  - **Backend App**: `b521d5cf-a911-4ea4-bba6-109a1fcb9fe9`
-  - **Frontend App**: `97a5b577-ca4e-4250-844d-3b167e4496c6`
-  - **Tenant ID**: `62837751-4e48-4d06-8bcb-57be1a669b78` (ibuyspy.net)
+  - **Backend App**: `<backend-app-registration-id>`
+  - **Frontend App**: `<frontend-app-registration-id>`
+  - **Tenant ID**: `<tenant-id>` (<tenant-domain>)
 - For local development without Azure, use `RBAC_MOCK_ROLES` environment variable
 
 ### System Requirements
@@ -92,13 +92,13 @@ Edit `.env` with your configuration:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/schemajeli_dev"
 
 # Azure Entra ID (Backend App Registration)
-AZURE_TENANT_ID="62837751-4e48-4d06-8bcb-57be1a669b78"
-AZURE_CLIENT_ID="b521d5cf-a911-4ea4-bba6-109a1fcb9fe9"
+AZURE_TENANT_ID="<tenant-id>"
+AZURE_CLIENT_ID="<backend-app-registration-id>"
 AZURE_CLIENT_SECRET="<your-secret-from-key-vault>"
 
 # JWT Validation
-JWT_AUDIENCE="api://b521d5cf-a911-4ea4-bba6-109a1fcb9fe9"
-JWT_ISSUER="https://sts.windows.net/62837751-4e48-4d06-8bcb-57be1a669b78/"
+JWT_AUDIENCE="api://<backend-app-registration-id>"
+JWT_ISSUER="https://sts.windows.net/<tenant-id>/"
 
 # RBAC Group Mapping (Entra ID group object IDs)
 RBAC_GROUP_ADMIN="<admin-group-id>"
@@ -195,8 +195,8 @@ Edit `.env` with your configuration:
 VITE_API_BASE_URL="http://localhost:3000/api/v1"
 
 # Azure Entra ID (Frontend App Registration)
-VITE_AZURE_TENANT_ID="62837751-4e48-4d06-8bcb-57be1a669b78"
-VITE_AZURE_CLIENT_ID="97a5b577-ca4e-4250-844d-3b167e4496c6"
+VITE_AZURE_TENANT_ID="<tenant-id>"
+VITE_AZURE_CLIENT_ID="<frontend-app-registration-id>"
 VITE_AZURE_REDIRECT_URI="http://localhost:5173"
 
 # Feature Flags

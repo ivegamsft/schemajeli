@@ -7,20 +7,20 @@
 
 ### 1. SchemaJeli Backend API
 - **Display Name:** SchemaJeli Backend API
-- **Client ID (Application ID):** `b521d5cf-a911-4ea4-bba6-109a1fcb9fe9`
-- **Object ID:** `f13372d1-c9ea-4e74-a346-baf51620bcd7`
-- **Service Principal ID:** `6bf0054b-550f-45c5-9d6c-f72a13dbc294`
-- **Tenant:** ibuyspy.net (62837751-4e48-4d06-8bcb-57be1a669b78)
+- **Client ID (Application ID):** `<backend-app-registration-id>`
+- **Object ID:** `<backend-object-id>`
+- **Service Principal ID:** `<backend-service-principal-id>`
+- **Tenant:** <tenant-domain> (<tenant-id>)
 - **Purpose:** Backend API authentication and OBO token exchange for Graph API access
 
 **Status:** ✅ Created | ⏳ Needs Client Secret | ⏳ Needs API Permissions
 
 ### 2. SchemaJeli Frontend
 - **Display Name:** SchemaJeli Frontend
-- **Client ID (Application ID):** `97a5b577-ca4e-4250-844d-3b167e4496c6`
-- **Object ID:** `3b2238ae-75cd-4266-860a-8ea8639b2abc`
-- **Service Principal ID:** `ab774419-4107-47d2-be8d-55c2130c745e`
-- **Tenant:** ibuyspy.net (62837751-4e48-4d06-8bcb-57be1a669b78)
+- **Client ID (Application ID):** `<frontend-app-registration-id>`
+- **Object ID:** `<frontend-object-id>`
+- **Service Principal ID:** `<frontend-service-principal-id>`
+- **Tenant:** <tenant-domain> (<tenant-id>)
 - **Redirect URIs:** http://localhost:5173, http://localhost:5173/auth/callback
 - **Purpose:** Frontend SPA authentication (MSAL)
 
@@ -32,12 +32,12 @@
 **Location:** `src/backend/.env`
 
 ```env
-AZURE_TENANT_ID=62837751-4e48-4d06-8bcb-57be1a669b78
-AZURE_CLIENT_ID=b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
+AZURE_TENANT_ID=<tenant-id>
+AZURE_CLIENT_ID=<backend-app-registration-id>
 AZURE_CLIENT_SECRET=                    # ⏳ TODO: Add secret from app registration
-JWT_AUDIENCE=api://b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
-JWT_ISSUER=https://sts.windows.net/62837751-4e48-4d06-8bcb-57be1a669b78/
-JWT_JWKS_URI=https://login.microsoftonline.com/62837751-4e48-4d06-8bcb-57be1a669b78/discovery/v2.0/keys
+JWT_AUDIENCE=api://<backend-app-registration-id>
+JWT_ISSUER=https://sts.windows.net/<tenant-id>/
+JWT_JWKS_URI=https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys
 AZURE_OBO_SCOPES=https://graph.microsoft.com/User.Read
 RBAC_GROUP_ADMIN=                       # ⏳ TODO: Add Azure AD group ID
 RBAC_GROUP_MAINTAINER=                  # ⏳ TODO: Add Azure AD group ID
@@ -49,8 +49,8 @@ RBAC_MOCK_ROLES=Viewer                  # Development fallback
 **Location:** `src/frontend/.env`
 
 ```env
-VITE_AZURE_TENANT_ID=62837751-4e48-4d06-8bcb-57be1a669b78
-VITE_AZURE_CLIENT_ID=97a5b577-ca4e-4250-844d-3b167e4496c6
+VITE_AZURE_TENANT_ID=<tenant-id>
+VITE_AZURE_CLIENT_ID=<frontend-app-registration-id>
 VITE_AZURE_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_API_URL=http://localhost:3000
 VITE_API_PREFIX=/api/v1
@@ -72,7 +72,7 @@ VITE_ENABLE_LOGGING=true
 # 6. Paste into src/backend/.env: AZURE_CLIENT_SECRET="<secret>"
 
 # OR using Azure CLI:
-# az ad app credential new --id "b521d5cf-a911-4ea4-bba6-109a1fcb9fe9" --years 2
+# az ad app credential new --id "<backend-app-registration-id>" --years 2
 ```
 
 **⚠️ CRITICAL:** The secret is only shown once. Copy it immediately and store securely.
@@ -85,7 +85,7 @@ VITE_ENABLE_LOGGING=true
 3. Click "+ Add a permission"
 4. Select "Microsoft Graph" > "Application permissions"
 5. Search for and add: **User.Read**
-6. Click "Grant admin consent for ibuyspy"
+6. Click "Grant admin consent for <tenant-domain>"
 
 This allows the OBO flow to read user profile data from Graph API.
 
@@ -98,7 +98,7 @@ This allows the OBO flow to read user profile data from Graph API.
 4. Select "My APIs" > "SchemaJeli Backend API"
 5. Select "Delegated permissions"
 6. Add: **User.Read** (for reading delegated user data)
-7. Click "Grant admin consent for ibuyspy"
+7. Click "Grant admin consent for <tenant-domain>"
 
 This allows the frontend to request tokens scoped to the backend API.
 
@@ -150,8 +150,8 @@ npm run dev
 
 ## Configuration References
 
-- **Tenant ID:** 62837751-4e48-4d06-8bcb-57be1a669b78
-- **Tenant Domain:** ibuyspy.net
+- **Tenant ID:** <tenant-id>
+- **Tenant Domain:** <tenant-domain>
 - **Azure Portal:** https://portal.azure.com
 - **Entra ID Admin:** https://entra.microsoft.com
 

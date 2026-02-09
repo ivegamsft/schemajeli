@@ -161,8 +161,8 @@ terraform apply plan.tfplan
 
 ### Development (.env)
 ```env
-AZURE_TENANT_ID=62837751-4e48-4d06-8bcb-57be1a669b78
-AZURE_CLIENT_ID=b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
+AZURE_TENANT_ID=<tenant-id>
+AZURE_CLIENT_ID=<backend-app-registration-id>
 AZURE_CLIENT_SECRET=<secret>
 DATABASE_URL=postgresql://user:pass@localhost:5432/schemajeli
 RBAC_MOCK_ROLES=Viewer

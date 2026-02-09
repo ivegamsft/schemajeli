@@ -1,0 +1,617 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli Naming Suggestions API
+  description: |
+    Generate themed naming suggestions for schema elements (US-3, FR-003).
+    Uses a three-stage pipeline: Filter → Rank → Format (research.md §3).
+
+    **Algorithm**: LRU-based element selection with context-aware ranking.
+    Character names are preferred for tables, place names for schemas,
+    object/concept names for columns and indexes.
+
+    **Performance targets:**
+    - SC-003: Suggestions generate in <500ms for any schema element
+    - SC-005: Element cycling works for 1000+ suggestions without degradation
+    - SC-007: 85%+ user success without manual fallback
+
+    **Rate limiting**: 100 requests/minute per user
+  version: 1.0.0
+  contact:
+    name: SchemaJeli Team
+
+servers:
+  - url: /api/v1
+    description: API v1 base path
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Naming Suggestions
+    description: Generate and apply themed naming suggestions
+
+paths:
+  /naming-suggestions:
+    post:
+      operationId: generateNamingSuggestions
+      summary: Generate themed naming suggestions
+      description: |
+        Generates 5-10 themed name suggestions for a schema entity (US-3, FR-003).
+        Uses the three-stage suggestion pipeline (research.md §3):
+
+        1. **Filter**: Select candidates via LRU strategy, filtered by entity type preference.
+        2. **Rank**: Score candidates by type match (40%), freshness (30%), recency (20%), suffix penalty (10%).
+        3. **Format**: Normalize to snake_case, apply prefix/suffix, check collisions.
+
+        **Context-aware type matching** (research.md §3):
+        - Schema/Database → PLACE elements preferred
+        - Table → CHARACTER elements preferred
+        - Column/Element → OBJECT, CONCEPT preferred
+        - Index/Constraint → CONCEPT preferred
+
+        **Performance**: SC-003 — must complete in <500ms (expected ~3ms).
+
+        Requires Viewer+ role (read-only operation that does not persist usage records).
+      tags: [Naming Suggestions]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Viewer, Maintainer, Admin]
+      x-rate-limit: 100/minute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NamingSuggestionRequest'
+            examples:
+              tableSuggestion:
+                summary: Generate table name suggestions
+                value:
+                  guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  entityType: table
+                  count: 5
+                  existingNames: ["users", "orders", "products"]
+                  prefix: "tbl"
+              columnSuggestion:
+                summary: Generate column name suggestions
+                value:
+                  guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  entityType: column
+                  count: 10
+                  existingNames: ["id", "name", "created_at"]
+              schemaSuggestion:
+                summary: Generate schema name suggestions
+                value:
+                  guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  entityType: schema
+                  count: 3
+                  existingNames: ["public"]
+      responses:
+        '200':
+          description: Generated naming suggestions ranked by score
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NamingSuggestionResponse'
+              examples:
+                tableSuggestions:
+                  summary: Table naming suggestions (Harry Potter theme)
+                  value:
+                    data:
+                      guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      guideName: "Harry Potter"
+                      entityType: table
+                      suggestions:
+                        - name: "tbl_dumbledore"
+                          elementId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                          elementText: "dumbledore"
+                          suffix: null
+                          elementType: CHARACTER
+                          score: 0.95
+                          reason: "Character name — well-known, never used, ideal for table naming"
+                        - name: "tbl_hermione"
+                          elementId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                          elementText: "hermione"
+                          suffix: null
+                          elementType: CHARACTER
+                          score: 0.93
+                          reason: "Character name — protagonist, never used"
+                        - name: "tbl_harry"
+                          elementId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                          elementText: "harry"
+                          suffix: null
+                          elementType: CHARACTER
+                          score: 0.91
+                          reason: "Character name — main protagonist, never used"
+                        - name: "tbl_snape"
+                          elementId: "e5f6a7b8-c9d0-1234-efab-345678901234"
+                          elementText: "snape"
+                          suffix: null
+                          elementType: CHARACTER
+                          score: 0.89
+                          reason: "Character name — memorable, never used"
+                        - name: "tbl_hogwarts"
+                          elementId: "f6a7b8c9-d0e1-2345-fabc-456789012345"
+                          elementText: "hogwarts"
+                          suffix: null
+                          elementType: PLACE
+                          score: 0.65
+                          reason: "Place name — secondary match for table naming"
+                      metadata:
+                        totalElementsInTheme: 52
+                        cycleDepth: 0
+                        generatedAt: "2026-02-08T15:30:00.000Z"
+                        processingTimeMs: 3
+                columnSuggestions:
+                  summary: Column naming with cycling
+                  value:
+                    data:
+                      guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      guideName: "Harry Potter"
+                      entityType: column
+                      suggestions:
+                        - name: "elder_wand"
+                          elementId: "a1111111-1111-1111-1111-111111111111"
+                          elementText: "elder_wand"
+                          suffix: null
+                          elementType: OBJECT
+                          score: 0.90
+                          reason: "Object name — ideal for column naming, never used"
+                        - name: "polyjuice_2"
+                          elementId: "a2222222-2222-2222-2222-222222222222"
+                          elementText: "polyjuice"
+                          suffix: 2
+                          elementType: OBJECT
+                          score: 0.55
+                          reason: "Object name — used once, cycling with suffix _2"
+                      metadata:
+                        totalElementsInTheme: 52
+                        cycleDepth: 2
+                        generatedAt: "2026-02-08T15:30:00.000Z"
+                        processingTimeMs: 4
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: NOT_FOUND
+                message: "Thematic guide not found or inactive"
+        '422':
+          description: Guide has insufficient elements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: UNPROCESSABLE_ENTITY
+                message: "Guide has fewer than 3 elements. Add more elements before generating suggestions."
+        '429':
+          description: Rate limit exceeded (100 requests/minute)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: RATE_LIMIT_EXCEEDED
+                message: "Rate limit exceeded. Maximum 100 requests per minute."
+          headers:
+            Retry-After:
+              description: Seconds until rate limit resets
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              description: Request limit per minute
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              description: Remaining requests in current window
+              schema:
+                type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /naming-suggestions/apply:
+    post:
+      operationId: applyNamingSuggestion
+      summary: Apply a naming suggestion to a schema entity
+      description: |
+        Commits a selected naming suggestion by creating a ThemeUsageRecord
+        and updating the element's denormalized usage counters.
+        This records the naming decision for audit trail (FR-015) and
+        updates LRU state for future suggestion generation (FR-007).
+
+        Requires Maintainer+ role (modifies schema metadata).
+      tags: [Naming Suggestions]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Maintainer, Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplySuggestionRequest'
+            example:
+              guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+              elementId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+              entityType: table
+              entityId: "e1f2a3b4-c5d6-7890-ef01-234567890abc"
+              appliedName: "tbl_dumbledore"
+      responses:
+        '201':
+          description: Suggestion applied and usage recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ThemeUsageRecord'
+              example:
+                data:
+                  id: "f1a2b3c4-d5e6-7890-abcd-ef0123456789"
+                  guideId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  elementId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  entityType: table
+                  entityId: "e1f2a3b4-c5d6-7890-ef01-234567890abc"
+                  appliedName: "tbl_dumbledore"
+                  selectedBy: "maintainer@example.com"
+                  selectedAt: "2026-02-08T16:00:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Guide, element, or target entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Name collision — applied name already in use for this entity scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: CONFLICT
+                message: "Name 'tbl_dumbledore' is already in use in this schema scope"
+                details:
+                  existingEntityId: "a0b1c2d3-e4f5-6789-0abc-def123456789"
+                  existingEntityType: table
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /naming-suggestions/usage:
+    get:
+      operationId: getUsageHistory
+      summary: Get suggestion usage history
+      description: |
+        Returns a paginated list of theme usage records for a guide,
+        showing which elements were applied to which entities.
+        Supports filtering by entity type and date range.
+        Used for audit trail review (FR-015).
+      tags: [Naming Suggestions]
+      security:
+        - bearerAuth: []
+      x-rbac-roles: [Viewer, Maintainer, Admin]
+      parameters:
+        - name: guideId
+          in: query
+          required: true
+          description: Filter by thematic guide ID
+          schema:
+            type: string
+            format: uuid
+        - name: entityType
+          in: query
+          description: Filter by entity type
+          schema:
+            $ref: '#/components/schemas/SchemaEntityType'
+        - name: since
+          in: query
+          description: Filter records after this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Filter records before this ISO 8601 timestamp
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Paginated usage history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ThemeUsageRecord'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure Entra ID JWT token
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-based)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      description: Results per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    SchemaEntityType:
+      type: string
+      enum: [schema, table, column, index, constraint]
+
+    ElementType:
+      type: string
+      enum: [CHARACTER, PLACE, OBJECT, CONCEPT, OTHER]
+
+    NamingSuggestionRequest:
+      type: object
+      required: [guideId, entityType]
+      properties:
+        guideId:
+          type: string
+          format: uuid
+          description: ID of the thematic guide to use
+        entityType:
+          $ref: '#/components/schemas/SchemaEntityType'
+        count:
+          type: integer
+          description: Number of suggestions to generate (default 5)
+          minimum: 1
+          maximum: 10
+          default: 5
+        existingNames:
+          type: array
+          description: |
+            Names already in use in the target scope (for collision avoidance).
+            Case-insensitive comparison is applied.
+          items:
+            type: string
+          default: []
+        prefix:
+          type: string
+          description: Optional prefix to prepend to all suggestions (e.g., "tbl", "col")
+          maxLength: 20
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+
+    NamingSuggestionResponse:
+      type: object
+      required: [guideId, guideName, entityType, suggestions, metadata]
+      properties:
+        guideId:
+          type: string
+          format: uuid
+        guideName:
+          type: string
+        entityType:
+          $ref: '#/components/schemas/SchemaEntityType'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suggestion'
+        metadata:
+          type: object
+          required: [totalElementsInTheme, cycleDepth, generatedAt, processingTimeMs]
+          properties:
+            totalElementsInTheme:
+              type: integer
+              description: Total elements available in the guide
+            cycleDepth:
+              type: integer
+              description: Maximum numeric suffix used (0 means no cycling)
+            generatedAt:
+              type: string
+              format: date-time
+              description: Timestamp of suggestion generation
+            processingTimeMs:
+              type: integer
+              description: Processing time in milliseconds
+
+    Suggestion:
+      type: object
+      required: [name, elementId, elementText, suffix, elementType, score]
+      properties:
+        name:
+          type: string
+          description: Formatted suggested name (with prefix/suffix if applicable)
+          maxLength: 63
+        elementId:
+          type: string
+          format: uuid
+          description: ID of the source theme element
+        elementText:
+          type: string
+          description: Base element text without prefix/suffix
+        suffix:
+          type: integer
+          nullable: true
+          description: Numeric suffix (null for first use, 2+ for cycling)
+        elementType:
+          $ref: '#/components/schemas/ElementType'
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: |
+            Ranking score (0-1) based on weighted factors:
+            - Type match: 40% (1.0 if preferred type, 0.5 otherwise)
+            - Freshness: 30% (1/(1+usageCount))
+            - Recency: 20% (1/(1+hoursSinceLastUse/24))
+            - Suffix penalty: 10% (1.0 if no suffix, 1/suffix otherwise)
+        reason:
+          type: string
+          description: Human-readable explanation of why this name was suggested
+
+    ApplySuggestionRequest:
+      type: object
+      required: [guideId, elementId, entityType, entityId, appliedName]
+      properties:
+        guideId:
+          type: string
+          format: uuid
+          description: ID of the thematic guide
+        elementId:
+          type: string
+          format: uuid
+          description: ID of the selected theme element
+        entityType:
+          $ref: '#/components/schemas/SchemaEntityType'
+        entityId:
+          type: string
+          format: uuid
+          description: ID of the schema entity receiving the name
+        appliedName:
+          type: string
+          minLength: 1
+          maxLength: 150
+          description: The actual name being applied (including prefix/suffix)
+
+    ThemeUsageRecord:
+      type: object
+      required: [id, guideId, elementId, entityType, entityId, appliedName, selectedBy, selectedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        guideId:
+          type: string
+          format: uuid
+        elementId:
+          type: string
+          format: uuid
+        entityType:
+          $ref: '#/components/schemas/SchemaEntityType'
+        entityId:
+          type: string
+          format: uuid
+        appliedName:
+          type: string
+          maxLength: 150
+        selectedBy:
+          type: string
+          description: User ID who applied the suggestion
+        selectedAt:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      required: [total, page, perPage, totalPages]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        perPage:
+          type: integer
+          minimum: 1
+        totalPages:
+          type: integer
+          minimum: 0
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          description: Additional error context
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: BAD_REQUEST
+            message: "Validation failed"
+            details:
+              - field: guideId
+                message: "guideId is required and must be a valid UUID"
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: UNAUTHORIZED
+            message: "Authentication required. Provide a valid Azure Entra ID JWT token."
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: FORBIDDEN
+            message: "Maintainer role required to apply naming suggestions"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: INTERNAL_ERROR
+            message: "An unexpected error occurred"

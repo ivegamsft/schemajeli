@@ -1,0 +1,1069 @@
+openapi: 3.0.3
+info:
+  title: SchemaJeli Style Guide Management API
+  description: |
+    API for managing style guides, naming rules, and validation of database naming conventions.
+    
+    ## Features
+    - Create, read, update, delete style guides
+    - Import/export style guides from/to JSON/YAML
+    - Version control with semantic versioning
+    - Validate schemas against style guides
+    - Track usage and impact analysis
+    
+    ## Authentication
+    All endpoints require JWT authentication via Azure Entra ID (MSAL).
+    Include the JWT token in the `Authorization` header: `Bearer <token>`
+    
+    ## Authorization
+    - **ADMIN**: All operations
+    - **EDITOR**: Read operations only
+    - **VIEWER**: Read operations only
+  version: 1.0.0
+  contact:
+    name: SchemaJeli Team
+    email: support@schemajeli.com
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.schemajeli.com/v1
+    description: Production server
+  - url: https://staging-api.schemajeli.com/v1
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Local development
+
+tags:
+  - name: Style Guides
+    description: Style guide CRUD operations
+  - name: Naming Rules
+    description: Naming rule management
+  - name: Versions
+    description: Version control and history
+  - name: Validation
+    description: Schema validation operations
+  - name: Import/Export
+    description: File import and export
+
+paths:
+  /style-guides:
+    get:
+      summary: List all style guides
+      description: Retrieve paginated list of style guides with search and filter
+      tags:
+        - Style Guides
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+        - name: source
+          in: query
+          description: Filter by source (MANUAL, IMPORTED)
+          schema:
+            type: string
+            enum: [MANUAL, IMPORTED]
+        - name: isActive
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StyleGuide'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      summary: Create new style guide
+      description: Create a new style guide with naming rules (ADMIN only)
+      tags:
+        - Style Guides
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StyleGuideCreate'
+      responses:
+        '201':
+          description: Style guide created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuide'
+                  message:
+                    type: string
+                    example: Style guide created successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Style guide with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /style-guides/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    get:
+      summary: Get style guide by ID
+      description: Retrieve detailed information about a specific style guide
+      tags:
+        - Style Guides
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuideDetailed'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    put:
+      summary: Update style guide
+      description: Update style guide and create new version (ADMIN only)
+      tags:
+        - Style Guides
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StyleGuideUpdate'
+      responses:
+        '200':
+          description: Style guide updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuide'
+                  version:
+                    type: string
+                    example: "1.1.0"
+                  changeType:
+                    type: string
+                    enum: [MAJOR, MINOR, PATCH]
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    
+    delete:
+      summary: Delete style guide
+      description: Soft delete style guide (ADMIN only). Cannot delete if in use.
+      tags:
+        - Style Guides
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Style guide deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Style guide deleted successfully
+        '400':
+          description: Cannot delete style guide in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /style-guides/{id}/rules:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    post:
+      summary: Add naming rule
+      description: Add new naming rule to style guide (creates new version)
+      tags:
+        - Naming Rules
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NamingRuleCreate'
+      responses:
+        '201':
+          description: Naming rule added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NamingRule'
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /style-guides/{id}/rules/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+      - name: ruleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    put:
+      summary: Update naming rule
+      description: Update naming rule (creates new version)
+      tags:
+        - Naming Rules
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NamingRuleUpdate'
+      responses:
+        '200':
+          description: Naming rule updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NamingRule'
+                  message:
+                    type: string
+    
+    delete:
+      summary: Remove naming rule
+      description: Remove naming rule from style guide (creates new version)
+      tags:
+        - Naming Rules
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Naming rule removed successfully
+
+  /style-guides/{id}/versions:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    get:
+      summary: Get version history
+      description: Retrieve version history for style guide
+      tags:
+        - Versions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StyleGuideVersion'
+
+  /style-guides/{id}/versions/{version}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          example: "1.2.3"
+    
+    get:
+      summary: Get specific version
+      description: Retrieve style guide at specific version
+      tags:
+        - Versions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuideVersion'
+
+  /style-guides/{id}/versions/{from}/compare/{to}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+      - name: from
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: to
+        in: path
+        required: true
+        schema:
+          type: string
+    
+    get:
+      summary: Compare versions
+      description: Get detailed diff between two versions
+      tags:
+        - Versions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionComparison'
+
+  /style-guides/{id}/versions/{version}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+    
+    post:
+      summary: Restore previous version
+      description: Rollback to previous version (creates new version)
+      tags:
+        - Versions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Version restored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuide'
+                  message:
+                    type: string
+
+  /style-guides/{id}/validate:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    post:
+      summary: Validate schema
+      description: Validate database schema against style guide
+      tags:
+        - Validation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resourceType:
+                  type: string
+                  enum: [DATABASE, TABLE]
+                resourceId:
+                  type: string
+                  format: uuid
+              required:
+                - resourceType
+                - resourceId
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ValidationResult'
+
+  /style-guides/{id}/usage:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    get:
+      summary: Get usage information
+      description: Get list of resources using this style guide
+      tags:
+        - Validation
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StyleGuideUsage'
+
+  /style-guides/import:
+    post:
+      summary: Import style guide
+      description: Import style guide from JSON/YAML file
+      tags:
+        - Import/Export
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JSON or YAML file containing style guide
+              required:
+                - file
+      responses:
+        '201':
+          description: Style guide imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StyleGuide'
+                  message:
+                    type: string
+        '400':
+          description: Invalid file format or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /style-guides/{id}/export:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    
+    get:
+      summary: Export style guide
+      description: Export style guide to JSON format
+      tags:
+        - Import/Export
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, yaml]
+            default: json
+      responses:
+        '200':
+          description: Successful export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StyleGuideExport'
+            application/x-yaml:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Azure Entra ID (MSAL)
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      description: Style guide UUID
+      schema:
+        type: string
+        format: uuid
+    
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    LimitParam:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    
+    SearchParam:
+      name: search
+      in: query
+      description: Search term for name/description
+      schema:
+        type: string
+
+  schemas:
+    StyleGuide:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        currentVersion:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+          example: "1.2.3"
+        isActive:
+          type: boolean
+        source:
+          type: string
+          enum: [MANUAL, IMPORTED]
+        ruleCount:
+          type: integer
+          description: Number of naming rules
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - currentVersion
+        - isActive
+        - source
+
+    StyleGuideDetailed:
+      allOf:
+        - $ref: '#/components/schemas/StyleGuide'
+        - type: object
+          properties:
+            rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamingRule'
+            usage:
+              type: array
+              items:
+                $ref: '#/components/schemas/StyleGuideUsage'
+            versions:
+              type: array
+              items:
+                $ref: '#/components/schemas/StyleGuideVersion'
+
+    StyleGuideCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamingRuleCreate'
+          minItems: 1
+      required:
+        - name
+        - rules
+
+    StyleGuideUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        rules:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/NamingRuleCreate'
+              - $ref: '#/components/schemas/NamingRuleUpdate'
+        changelog:
+          type: string
+          description: Summary of changes for version history
+
+    NamingRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        entityType:
+          type: string
+          enum: [TABLE, COLUMN, INDEX, CONSTRAINT]
+        pattern:
+          type: string
+          description: Regular expression pattern
+        caseConvention:
+          type: string
+          enum: [PascalCase, camelCase, UPPER_SNAKE_CASE, lower_snake_case, kebab-case]
+        description:
+          type: string
+        exampleValid:
+          type: array
+          items:
+            type: string
+        exampleInvalid:
+          type: array
+          items:
+            type: string
+        isRequired:
+          type: boolean
+        ruleOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - entityType
+        - pattern
+        - caseConvention
+
+    NamingRuleCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        entityType:
+          type: string
+          enum: [TABLE, COLUMN, INDEX, CONSTRAINT]
+        pattern:
+          type: string
+        caseConvention:
+          type: string
+          enum: [PascalCase, camelCase, UPPER_SNAKE_CASE, lower_snake_case, kebab-case]
+        description:
+          type: string
+        exampleValid:
+          type: array
+          items:
+            type: string
+        exampleInvalid:
+          type: array
+          items:
+            type: string
+        isRequired:
+          type: boolean
+          default: false
+        ruleOrder:
+          type: integer
+          default: 0
+      required:
+        - name
+        - entityType
+        - pattern
+        - caseConvention
+
+    NamingRuleUpdate:
+      allOf:
+        - $ref: '#/components/schemas/NamingRuleCreate'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+
+    StyleGuideVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        changeType:
+          type: string
+          enum: [MAJOR, MINOR, PATCH]
+        changelog:
+          type: string
+        ruleSnapshot:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamingRule'
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+
+    VersionComparison:
+      type: object
+      properties:
+        from:
+          type: object
+          properties:
+            version:
+              type: string
+            rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamingRule'
+        to:
+          type: object
+          properties:
+            version:
+              type: string
+            rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamingRule'
+        diff:
+          type: object
+          properties:
+            added:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamingRule'
+            modified:
+              type: array
+              items:
+                type: object
+                properties:
+                  ruleId:
+                    type: string
+                  changes:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        old:
+                          type: string
+                        new:
+                          type: string
+            removed:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamingRule'
+        summary:
+          type: object
+          properties:
+            added:
+              type: integer
+            modified:
+              type: integer
+            removed:
+              type: integer
+
+    ValidationResult:
+      type: object
+      properties:
+        styleGuideId:
+          type: string
+          format: uuid
+        resourceType:
+          type: string
+          enum: [DATABASE, TABLE]
+        resourceId:
+          type: string
+          format: uuid
+        totalElements:
+          type: integer
+        totalViolations:
+          type: integer
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
+        summary:
+          type: object
+          properties:
+            byRule:
+              type: object
+              additionalProperties:
+                type: integer
+            bySeverity:
+              type: object
+              additionalProperties:
+                type: integer
+
+    Violation:
+      type: object
+      properties:
+        elementId:
+          type: string
+          format: uuid
+        elementName:
+          type: string
+        elementType:
+          type: string
+          enum: [TABLE, COLUMN, INDEX, CONSTRAINT]
+        ruleId:
+          type: string
+          format: uuid
+        ruleName:
+          type: string
+        expected:
+          type: string
+          description: Expected pattern
+        actual:
+          type: string
+          description: Current name
+        suggestion:
+          type: string
+          description: Suggested corrected name
+        severity:
+          type: string
+          enum: [ERROR, WARNING]
+
+    StyleGuideUsage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        resourceType:
+          type: string
+          enum: [DATABASE, TABLE]
+        resourceId:
+          type: string
+          format: uuid
+        resourceName:
+          type: string
+        appliedBy:
+          $ref: '#/components/schemas/UserSummary'
+        appliedAt:
+          type: string
+          format: date-time
+        violationCount:
+          type: integer
+
+    StyleGuideExport:
+      type: object
+      properties:
+        schemaVersion:
+          type: string
+          example: "1.0"
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamingRule'
+        metadata:
+          type: object
+          properties:
+            exportedAt:
+              type: string
+              format: date-time
+            exportedBy:
+              type: string
+            source:
+              type: string
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        totalCount:
+          type: integer
+        hasNextPage:
+          type: boolean
+        hasPrevPage:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+      required:
+        - error
+        - message
+
+  responses:
+    BadRequestError:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: VALIDATION_ERROR
+            message: Invalid request data
+            details:
+              field: pattern
+              message: Invalid regex syntax
+
+    UnauthorizedError:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: UNAUTHORIZED
+            message: Missing or invalid authentication token
+
+    ForbiddenError:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: FORBIDDEN
+            message: Admin role required for this operation
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: NOT_FOUND
+            message: Style guide not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: INTERNAL_ERROR
+            message: An unexpected error occurred

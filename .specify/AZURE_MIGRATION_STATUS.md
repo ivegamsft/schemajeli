@@ -29,12 +29,12 @@ Successfully migrated SchemaJeli authentication from email/password to Azure Ent
 - [x] npm install successful (371 packages with --force)
 
 ### Azure Setup (100% Complete)
-- [x] Backend app registration: `b521d5cf-a911-4ea4-bba6-109a1fcb9fe9`
-- [x] Frontend app registration: `97a5b577-ca4e-4250-844d-3b167e4496c6`
+- [x] Backend app registration: `<backend-app-registration-id>`
+- [x] Frontend app registration: `<frontend-app-registration-id>`
 - [x] Redirect URIs configured: http://localhost:5173/auth/callback
 - [x] Environment files created with actual tenant/app values
 - [x] JWT validation endpoints configured
-- [x] Tenant ID confirmed: 62837751-4e48-4d06-8bcb-57be1a669b78
+- [x] Tenant ID confirmed: <tenant-id>
 
 ## Remaining Tasks (5% - Minor Fixes)
 
@@ -91,19 +91,19 @@ Some components reference `table._count.elements` which may not be populated. Ei
 
 ### Backend (.env)
 ```env
-AZURE_TENANT_ID=62837751-4e48-4d06-8bcb-57be1a669b78
-AZURE_CLIENT_ID=b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
+AZURE_TENANT_ID=<tenant-id>
+AZURE_CLIENT_ID=<backend-app-registration-id>
 AZURE_CLIENT_SECRET=                    # ⏳ TODO: Generate in Azure Portal
-JWT_AUDIENCE=api://b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
-JWT_ISSUER=https://sts.windows.net/62837751-4e48-4d06-8bcb-57be1a669b78/
-JWT_JWKS_URI=https://login.microsoftonline.com/62837751-4e48-4d06-8bcb-57be1a669b78/discovery/v2.0/keys
+JWT_AUDIENCE=api://<backend-app-registration-id>
+JWT_ISSUER=https://sts.windows.net/<tenant-id>/
+JWT_JWKS_URI=https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys
 RBAC_MOCK_ROLES=Viewer                  # Development fallback
 ```
 
 ### Frontend (.env)
 ```env
-VITE_AZURE_TENANT_ID=62837751-4e48-4d06-8bcb-57be1a669b78
-VITE_AZURE_CLIENT_ID=97a5b577-ca4e-4250-844d-3b167e4496c6
+VITE_AZURE_TENANT_ID=<tenant-id>
+VITE_AZURE_CLIENT_ID=<frontend-app-registration-id>
 VITE_AZURE_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_API_URL=http://localhost:3000
 ```
@@ -182,9 +182,9 @@ cd src/frontend && npm run dev
 ┌─────────────────────────────────────────────────────────────┐
 │                        Azure Entra ID                       │
 │                                                             │
-│  Tenant: ibuyspy.net                                        │
-│  Frontend App: 97a5b577-ca4e-4250...                       │
-│  Backend App: b521d5cf-a911-4ea4...                        │
+│  Tenant: <tenant-domain>                                  │
+│  Frontend App: <frontend-app-registration-id>            │
+│  Backend App: <backend-app-registration-id>              │
 │                                                             │
 └────────────────────┬────────────────────────────────────────┘
                      │
@@ -216,8 +216,8 @@ cd src/frontend && npm run dev
 
 - **Azure Entra ID Setup:** [Azure Portal](https://portal.azure.com)
 - **App Registration Details:**
-  - Backend: b521d5cf-a911-4ea4-bba6-109a1fcb9fe9
-  - Frontend: 97a5b577-ca4e-4250-844d-3b167e4496c6
+  - Backend: <backend-app-registration-id>
+  - Frontend: <frontend-app-registration-id>
 - **MSAL Documentation:** https://github.com/AzureAD/microsoft-authentication-library-for-js
 - **JWT Validation:** [Azure Token Reference](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-id-and-access-tokens)
 

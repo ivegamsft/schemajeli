@@ -239,7 +239,7 @@ As a system user, I need the application to remain functional even when Azure se
 
 1. **Azure Entra ID Availability**: We assume Azure Entra ID (formerly Azure Active Directory) maintains its published SLA of 99.99% uptime. If Azure Entra ID is unavailable, users cannot authenticate, and the system is effectively unavailable.
 
-2. **Tenant Configuration**: We assume the Azure Entra ID tenant (ibuyspy.net) is properly configured with app registrations for both backend (b521d5cf-a911-4ea4-bba6-109a1fcb9fe9) and frontend (97a5b577-ca4e-4250-844d-3b167e4496c6), including appropriate redirect URIs, API permissions, and group claims.
+2. **Tenant Configuration**: We assume the Azure Entra ID tenant (<tenant-domain>) is properly configured with app registrations for both backend (<backend-app-registration-id>) and frontend (<frontend-app-registration-id>), including appropriate redirect URIs, API permissions, and group claims.
 
 3. **Group Management**: We assume organization administrators manage Azure Entra ID security groups and user memberships. SchemaJeli reads group membership from token claims but does not create, modify, or delete groups.
 
